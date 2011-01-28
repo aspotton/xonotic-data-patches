@@ -404,6 +404,7 @@ string GametypeNameFromType(float g)
 	else if (g == GAME_CTS) return "cts";
 	else if (g == GAME_FREEZETAG) return "freezetag";
 	else if (g == GAME_KEEPAWAY) return "ka";
+	else if (g == GAME_ZOMBIEHORDE) return "zombiehorde";
 	return "dm";
 }
 

@@ -41,6 +41,7 @@ const float GAME_CTS = 13;
 const float GAME_CA		= 14;
 const float GAME_FREEZETAG		= 15;
 const float GAME_KEEPAWAY		= 16;
+const float GAME_ZOMBIEHORDE		= 17;
 
 const float AS_STRING		= 1;
 const float AS_INT		= 2;

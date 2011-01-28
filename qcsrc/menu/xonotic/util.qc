@@ -544,6 +544,7 @@ float updateCompression()
 	GAMETYPE(MAPINFO_TYPE_CTS, _("Race CTS")) \
 	GAMETYPE(MAPINFO_TYPE_RUNEMATCH, _("Runematch")) \
 	GAMETYPE(MAPINFO_TYPE_TEAM_DEATHMATCH, _("Team Deathmatch")) \
+	GAMETYPE(MAPINFO_TYPE_ZOMBIEHORDE, _("Zombie Horde")) \
 	/* nothing */
 
 float GameType_GetID(float cnt)

@@ -322,6 +322,7 @@ void cvar_changes_init()
 		BADCVAR("g_domination_default_teams");
 		BADCVAR("g_freezetag");
 		BADCVAR("g_keepaway");
+		BADCVAR("g_zombiehorde");
 		BADCVAR("g_keyhunt");
 		BADCVAR("g_keyhunt_teams");
 		BADCVAR("g_keyhunt_teams");

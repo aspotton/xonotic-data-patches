@@ -103,6 +103,7 @@ void WriteGameCvars()
 	cvar_set("g_cts", ftos(g_cts));
 	cvar_set("g_freezetag", ftos(g_freezetag));
 	cvar_set("g_keepaway", ftos(g_keepaway));
+	cvar_set("g_zombiehorde", ftos(g_zombiehorde));
 }
 
 void ReadGameCvars()
@@ -132,6 +133,7 @@ void ReadGameCvars()
 		found += (g_cts = (!found && (prev != GAME_CTS) && cvar("g_cts")));
 		found += (g_freezetag = (!found && (prev != GAME_FREEZETAG) && cvar("g_freezetag")));
 		found += (g_keepaway = (!found && (prev != GAME_KEEPAWAY) && cvar("g_keepaway")));
+		found += (g_zombiehorde = (!found && (prev != GAME_ZOMBIEHORDE) && cvar("g_zombiehorde")));
 //#NO AUTOCVARS END
 
 		if(found)
@@ -380,6 +382,13 @@ void InitGameplayMode()
 		game = GAME_KEEPAWAY;
 		gamemode_name = "Keepaway";
 		MUTATOR_ADD(gamemode_keepaway);
+	}
+
+	if(g_zombiehorde)
+	{
+		game = GAME_ZOMBIEHORDE;
+		gamemode_name = "Zombie Horde";
+		MUTATOR_ADD(gamemode_zombiehorde);
 	}
 
 	if(teams_matter)
@@ -842,6 +851,8 @@ float FindSmallestTeam(entity pl, float ignore_pl)
 			error("Too few teams available for key hunt\n");
 		else if(g_freezetag)
 			error("Too few teams available for freeze tag\n");
+		else if(g_zombiehorde)
+			error("Too few teams available for zombie horde\n");
 		else
 			error("Too few teams available for team deathmatch\n");
 	}

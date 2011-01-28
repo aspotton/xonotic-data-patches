@@ -666,6 +666,7 @@ float MapInfo_Type_FromString(string t)
 	else if(t == "cts")     return MAPINFO_TYPE_CTS;
 	else if(t == "freezetag") 	return MAPINFO_TYPE_FREEZETAG;
 	else if(t == "keepaway") return MAPINFO_TYPE_KEEPAWAY;
+	else if(t == "zombiehorde") return MAPINFO_TYPE_ZOMBIEHORDE;
 	else if(t == "all")     return MAPINFO_TYPE_ALL;
 	else                    return 0;
 }
@@ -688,6 +689,7 @@ string MapInfo_Type_ToString(float t)
 	else if(t == MAPINFO_TYPE_CTS)             return "cts";
 	else if(t == MAPINFO_TYPE_FREEZETAG)       return "freezetag";
 	else if(t == MAPINFO_TYPE_KEEPAWAY)  	   return "keepaway";
+	else if(t == MAPINFO_TYPE_ZOMBIEHORDE) 	   return "zombiehorde";
 	else if(t == MAPINFO_TYPE_ALL)             return "all";
 	else                                       return "";
 }
@@ -1156,6 +1158,8 @@ float MapInfo_CurrentGametype()
 		return MAPINFO_TYPE_FREEZETAG;
 	else if(cvar("g_keepaway"))
 		return MAPINFO_TYPE_KEEPAWAY;
+	else if(cvar("g_zombiehorde"))
+		return MAPINFO_TYPE_ZOMBIEHORDE;
 	else
 		return MAPINFO_TYPE_DEATHMATCH;
 }
@@ -1199,6 +1203,7 @@ string MapInfo_GetGameTypeCvar(float t)
 		case MAPINFO_TYPE_FREEZETAG: return "g_freezetag";
 		case MAPINFO_TYPE_CTS: return "g_cts";
 		case MAPINFO_TYPE_KEEPAWAY: 		return "g_keepaway";
+		case MAPINFO_TYPE_ZOMBIEHORDE: return "g_zombiehorde";
 		default: return "";
 	}
 }
@@ -1222,6 +1227,7 @@ void MapInfo_SwitchGameType(float t)
 	cvar_set("g_cts",        (t == MAPINFO_TYPE_CTS)             ? "1" : "0");
 	cvar_set("g_freezetag",  (t == MAPINFO_TYPE_FREEZETAG)       ? "1" : "0");
 	cvar_set("g_keepaway",   (t == MAPINFO_TYPE_KEEPAWAY)        ? "1" : "0");
+	cvar_set("g_zombiehorde",(t == MAPINFO_TYPE_ZOMBIEHORDE)     ? "1" : "0");
 }
 
 void MapInfo_LoadMap(string s)
