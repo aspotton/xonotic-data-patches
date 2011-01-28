@@ -386,8 +386,10 @@ void InitGameplayMode()
 
 	if(g_zombiehorde)
 	{
+		print("Initializing Zombie Horde...\n");
 		game = GAME_ZOMBIEHORDE;
 		gamemode_name = "Zombie Horde";
+		ActivateTeamplay();
 		MUTATOR_ADD(gamemode_zombiehorde);
 	}
 
