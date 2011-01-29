@@ -165,6 +165,7 @@ target_music.qc
 
 ../common/items.qc
 
+verbstack.qc
 monsters/defs.qc
 monsters/fight.qc
 monsters/ai.qc

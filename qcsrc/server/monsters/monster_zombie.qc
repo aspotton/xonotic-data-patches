@@ -1,4 +1,4 @@
-//#define MONSTES_ENABLED
+#define MONSTES_ENABLED
 #ifdef MONSTES_ENABLED
 
 #define zombie_anim_attackleap         0
@@ -229,7 +229,7 @@ void zombie_move()
 
     self.steerto = normalize(steerlib_attract2(self.moveto,0.5,500,0.95) + self.bvec);
 
-    self.angles_y = safeangle(self.angles_y);
+    //self.angles_y = safeangle(self.angles_y);
     real_angle = vectoangles(self.steerto) - self.angles;
     self.angles_y += bound(-10, real_angle_y, 10);
 
