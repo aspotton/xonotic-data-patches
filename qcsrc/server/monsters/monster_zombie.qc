@@ -1,6 +1,8 @@
 #define MONSTES_ENABLED
 #ifdef MONSTES_ENABLED
 
+void zombiehorde_ZombieDied();
+
 #define zombie_anim_attackleap         0
 #define zombie_anim_attackrun1         1
 #define zombie_anim_attackrun2         2
@@ -139,22 +141,28 @@ void zombie_die(vector dir)
             dummy.frame = zombie_anim_deathleft1 + rint(random() * 2);
     }
 
+    if (g_zombiehorde)
+        zombiehorde_ZombieDied();
 
     if(self.spawnflags & MONSTERFLAG_NORESPAWN)
     {
+        verbstack_flush(self.verbs_idle);
+        remove(self.verbs_idle);
+        verbstack_flush(self.verbs_attack);
+        remove(self.verbs_attack);
+
         self.think = SUB_Remove;
         self.nextthink = time;
-        return;
+    } else {
+        setmodel(self,"");
+        self.solid          = SOLID_NOT;
+        self.takedamage     = DAMAGE_NO;
+        self.event_damage   = SUB_Null;
+        self.enemy          = world;
+        self.think          = zombie_spawn;
+        self.nextthink      = time + autocvar_g_monster_zombie_respawntime;
+        self.pain_finished  = self.nextthink;
     }
-
-    setmodel(self,"");
-    self.solid          = SOLID_NOT;
-    self.takedamage     = DAMAGE_NO;
-    self.event_damage   = SUB_Null;
-    self.enemy          = world;
-    self.think          = zombie_spawn;
-    self.nextthink      = time + autocvar_g_monster_zombie_respawntime;
-    self.pain_finished  = self.nextthink;
 }
 
 void zombie_damage(entity inflictor, entity attacker, float damage, float deathtype, vector hitloc, vector force)
@@ -199,7 +207,7 @@ void zombie_damage(entity inflictor, entity attacker, float damage, float deatht
                 self.frame = zombie_anim_painfront2;
         }
 
-        self.pain_finished = time + 0.36;
+        self.pain_finished = time + (0.10 + (random() * 0.36));
     }
 }
 
@@ -222,16 +230,14 @@ void zombie_move()
         self.bvec = steerlib_beamsteer(steerlib_attract2(self.moveto,0.5,500,0.95),512,32,34,64);
     }
 
-    if(self.enemy)
+    if not (self.enemy == world)
         self.moveto = self.enemy.origin;
-    else
-        self.moveto = self.origin + v_forward;
 
     self.steerto = normalize(steerlib_attract2(self.moveto,0.5,500,0.95) + self.bvec);
 
-    //self.angles_y = safeangle(self.angles_y);
+    self.angles_y = safeangle(self.angles_y);
     real_angle = vectoangles(self.steerto) - self.angles;
-    self.angles_y += bound(-10, real_angle_y, 10);
+    self.angles_y += bound(-25, shortangle_f(real_angle_y, self.angles_y), 25);
 
     if(vlen(self.origin - self.moveto) > 64)
     {
@@ -265,8 +271,14 @@ float zombie_verb_idle_roam(float eval)
 
     case VCM_DO:
 
-        self.moveto = v_forward * 128;
-        self.steerto = v_forward; //steerlib_beamsteer(v_forward,512,32,34,64);
+        //self.moveto = v_forward * 128;
+        //self.steerto = v_forward; //steerlib_beamsteer(v_forward,512,32,34,64);
+
+ 	self.moveto = v_forward * 128;
+	if ((random() * 1) < 0.5)
+	        self.steerto = v_forward * (random() * 25);
+	else
+	        self.steerto = v_forward * (random() * -25);
 
         return VS_CALL_YES_DOING;
     }
@@ -340,7 +352,7 @@ float zombie_verb_attack_findtarget(float eval)
         entity trg, best_trg;
         float trg_score, best_trg_score;
 
-        trg = findradius(self.origin,autocvar_g_monster_zombie_targetrange);
+        trg = findradius(self.origin, autocvar_g_monster_zombie_targetrange);
         while(trg)
         {
             trg_score = zombie_scoretarget(trg);
@@ -356,7 +368,7 @@ float zombie_verb_attack_findtarget(float eval)
         if(best_trg)
         {
             self.enemy = best_trg;
-            dprint("Selected: ",best_trg.netname, " as target.\n");
+            //print("Selected: ",best_trg.netname, " as target.\n");
         }
 
         return VS_CALL_YES_DOING;
@@ -374,8 +386,8 @@ void zombie_runattack_damage()
     if(vlen(self.origin - self.enemy.origin) > autocvar_g_monster_zombie_attack_run_hitrange)
         return;
 
-    if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.6)
-        return;
+    //if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.6)
+    //    return;
 
     Damage(self.enemy, self, self, autocvar_g_monster_zombie_attack_run_damage, DEATH_TURRET, self.enemy.origin, normalize(self.enemy.origin - self.origin)  * autocvar_g_monster_zombie_attack_run_force);
 
@@ -425,10 +437,10 @@ void zombie_standattack_damage()
     //oldself = self;
     //self = self.owner;
 
-    setorigin(self,self.owner.origin + v_forward * 32);
-    RadiusDamage(self, self.owner, autocvar_g_monster_zombie_attack_stand_damage,autocvar_g_monster_zombie_attack_stand_damage,16,self, autocvar_g_monster_zombie_attack_stand_force,DEATH_TURRET,world);
+    setorigin(self,self.owner.origin + v_forward);
+    //RadiusDamage(self, self.owner, autocvar_g_monster_zombie_attack_stand_damage,autocvar_g_monster_zombie_attack_stand_damage,16,self, autocvar_g_monster_zombie_attack_stand_force,DEATH_TURRET,world);
+    RadiusDamage(self, self.owner, autocvar_g_monster_zombie_attack_stand_damage,autocvar_g_monster_zombie_attack_stand_damage,70,self, autocvar_g_monster_zombie_attack_stand_force,DEATH_TURRET,world);
     //float RadiusDamage (entity inflictor, entity attacker, float coredamage, float edgedamage, float rad, entity ignore, float forceintensity, float deathtype, entity directhitentity)
-
 
     //self = oldself;
     self.think = SUB_Remove;
@@ -461,7 +473,7 @@ float zombie_verb_attack_stand(float eval)
         pain.think = zombie_runattack_damage;
         pain.nextthink = time + autocvar_g_monster_zombie_attack_stand_delay;
 
-        self.attack_finished_single = time + 0.7;
+        self.attack_finished_single = time + 0.7 + (random() * 0.5);
         self.frame = zombie_anim_attackstanding1 + rint(random() * 1);
         dprint("frame:",ftos(self.frame),"\n");
 
@@ -477,21 +489,24 @@ void zombie_think()
     makevectors(self.angles);
     self.angles_x *= -1;
 
+    if (self.enemy != world)
     if (zombie_scoretarget(self.enemy) == 0)
+    {
         self.enemy = world;
+    } 
 
     verbstack_pop(self.verbs_attack);
-    //verbstack_pop(self.verbs_move);
-
-    if not (self.enemy)
+    if (self.enemy == world) 
         verbstack_pop(self.verbs_idle);
 
-    zombie_move();
+    // zombies are temporarily stunned when in pain
+    if (self.pain_finished <= time)
+        zombie_move();
 
     if(self.enemy)
-        self.nextthink = time;
-    else
         self.nextthink = time + 0.2;
+    else
+        self.nextthink = time + 0.5;
 }
 
 void zombie_spawn()
@@ -549,7 +564,6 @@ void spawnfunc_monster_zombie()
     verbstack_push(self.verbs_attack, zombie_verb_attack_findtarget, ZV_ATTACK_FIND,0 , self);
     verbstack_push(self.verbs_attack, zombie_verb_attack_run, ZV_ATTACK_RUN,0 , self);
     verbstack_push(self.verbs_attack, zombie_verb_attack_stand, ZV_ATTACK_STAND,0 , self);
-
 }
 
 #endif // MONSTES_ENABLED

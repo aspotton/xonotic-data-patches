@@ -13,6 +13,17 @@ float anglemods(float v)
 		return v;
 }
 
+float safeangle(float a)
+{
+    if((a >= -360) && (a <= 360))
+        return a;
+
+
+    a -= (360 * floor(a / 360));
+
+    return a;
+}
+
 /*
 * Return the short angle
 */
