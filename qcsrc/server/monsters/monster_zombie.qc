@@ -533,7 +533,7 @@ void zombie_spawn()
     self.angles         = self.pos2;
     self.moveto         = self.origin;
     self.flags          = FL_MONSTER;
-    self.deadflags      = DEAD_NO;
+    self.deadflag       = DEAD_NO;
 
     setorigin(self,self.pos1);
     setsize(self,ZOMBIE_MIN,ZOMBIE_MAX);
