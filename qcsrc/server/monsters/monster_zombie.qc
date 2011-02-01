@@ -179,9 +179,15 @@ void zombie_damage(entity inflictor, entity attacker, float damage, float deatht
     self.velocity = self.velocity + force;
     if(self.health <= 0)
     {
-        zombie_die(hitloc);
+        if (self.deadflag == DEAD_NO)
+        {
+            self.deadflag = DEAD_DEAD;
+            zombie_die(hitloc);
+        }
+     
         return;
     }
+
 
     Violence_GibSplash_At(hitloc, force, 2, bound(0, damage, 200) / 16, self, attacker);
 
@@ -504,9 +510,9 @@ void zombie_think()
         zombie_move();
 
     if(self.enemy)
-        self.nextthink = time + 0.2;
+        self.nextthink = time + (random() * .4);
     else
-        self.nextthink = time + 0.5;
+        self.nextthink = time + (random() * .6);
 }
 
 void zombie_spawn()
@@ -527,6 +533,7 @@ void zombie_spawn()
     self.angles         = self.pos2;
     self.moveto         = self.origin;
     self.flags          = FL_MONSTER;
+    self.deadflags      = DEAD_NO;
 
     setorigin(self,self.pos1);
     setsize(self,ZOMBIE_MIN,ZOMBIE_MAX);
