@@ -102,6 +102,16 @@ void zombiehorde_RoundThink()
 		}
 		case ROUND_STARTED:
 		{
+			if (cvar("g_zombiehorde_increasezombies") > 0)
+			{
+				local entity e;
+				FOR_EACH_REALPLAYER(e)
+					centerprint(e, strcat("-- INCREASING ZOMBIES BY ", ftos(cvar("g_zombiehorde_increasezombies")), " --\n"));
+
+				zhZombiesToSpawn += cvar("g_zombiehorde_increasezombies");
+				cvar_set("g_zombiehorde_increasezombies", "0");
+			}
+
 			// Stagger the spawning of zombies slightly
 			if (zhZombiesToSpawn > 0)
 			if (random() * 5 < 2)

@@ -75,7 +75,7 @@ float zombie_scoretarget(entity trg)
             tmp = vlen(ang1 - v_forward);
             if(tmp > 1.5)
             {
-                traceline(self.origin + ('0 0 47' * self.scale), trg.origin + ('0 0 32' * self.scale), MOVE_NORMAL, self);
+                traceline(self.origin, trg.origin, MOVE_NORMAL, self);
                 if(trace_ent != trg)
                     return 0;
 
@@ -376,6 +376,15 @@ float zombie_verb_attack_findtarget(float eval)
         {
             self.enemy = best_trg;
             //print("Selected: ",best_trg.netname, " as target.\n");
+
+            // Roar to other nearby zombies!
+            if(clienttype(self.enemy) == CLIENTTYPE_REAL)
+            for(trg = findradius(self.origin, 1200); trg; trg = trg.chain)
+            if(trg.classname == "monster_zombie" && trg.deadflag != DEAD_DEAD && trg.enemy == world)
+            {
+                trg.enemy = self.enemy;
+                trg.steerto = self.enemy.origin;
+            }
         }
 
         return VS_CALL_YES_DOING;
@@ -496,6 +505,13 @@ void zombie_think()
     makevectors(self.angles);
     self.angles_x *= -1;
 
+    if (cvar("g_zombiehorde_tracezombies") == 1) 
+    {
+        local entity player;
+        FOR_EACH_REALCLIENT(player)
+            te_lightning1(world, self.origin, player.origin);
+    }
+
     if (self.enemy != world)
     if (zombie_scoretarget(self.enemy) == 0)
     {
@@ -505,8 +521,6 @@ void zombie_think()
     verbstack_pop(self.verbs_attack);
     if (self.enemy == world) 
         verbstack_pop(self.verbs_idle);
-    else
-        navigation_routetogoal(self, self.enemy.origin);
 
     // zombies are temporarily stunned when in pain
     if (self.pain_finished <= time)
@@ -562,11 +576,11 @@ void spawnfunc_monster_zombie()
 
     self.think      = zombie_spawn;
     self.nextthink  = time + 2;
+    self.classname = "monster_zombie";
 
-    traceline(self.origin + ('0 0 10' * self.scale), self.origin - ('0 0 20' * self.scale), MOVE_WORLDONLY, self);
-
-    if (trace_fraction == 1)
-        print("Possible bad ground position!\n");
+    float test = 1.0;
+    if (self.scale > 1) test = self.scale;
+    traceline(self.origin + ('0 0 10' * test), self.origin - ('0 0 20' * test), MOVE_WORLDONLY, self);
 
     self.pos1 = trace_endpos;
     self.pos2 = self.angles;
