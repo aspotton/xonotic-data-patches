@@ -1,7 +1,7 @@
 #define MONSTES_ENABLED
 #ifdef MONSTES_ENABLED
 
-void zombiehorde_ZombieDied();
+void zombiehorde_ZombieDied(entity attacker);
 
 #define zombie_anim_attackleap         0
 #define zombie_anim_attackrun1         1
@@ -103,7 +103,7 @@ void zombie_corpse_damage(entity inflictor, entity attacker, float damage, float
     }
 }
 
-void zombie_die(vector dir)
+void zombie_die(vector dir, entity attacker)
 {
     vector v;
     float f;
@@ -143,7 +143,7 @@ void zombie_die(vector dir)
     }
 
     if (g_zombiehorde)
-        zombiehorde_ZombieDied();
+        zombiehorde_ZombieDied(attacker);
 
     if(self.spawnflags & MONSTERFLAG_NORESPAWN)
     {
@@ -183,7 +183,7 @@ void zombie_damage(entity inflictor, entity attacker, float damage, float deatht
         if (self.deadflag == DEAD_NO)
         {
             self.deadflag = DEAD_DEAD;
-            zombie_die(hitloc);
+            zombie_die(hitloc, attacker);
         }
      
         return;

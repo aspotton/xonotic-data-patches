@@ -114,7 +114,7 @@ void zombiehorde_RoundThink()
 
 			// Stagger the spawning of zombies slightly
 			if (zhZombiesToSpawn > 0)
-			if (random() * 5 < 2)
+			if (random() * 5 < bound(0, cvar("g_zombiehorde_staggerspawn"), 5))
 			{
 				zombiehorde_SpawnZombie();
 				zhZombiesToSpawn--;
@@ -143,8 +143,12 @@ void zombiehorde_RoundThink()
 	}
 }
 
-void zombiehorde_ZombieDied()
+void zombiehorde_ZombieDied(entity attacker)
 {
+	// Zombies count as a kill!
+	attacker.totalfrags += PlayerScore_Add(attacker, SP_KILLS, 1);
+	UpdateFrags(attacker, attacker.totalfrags);
+
 	zhZombiesAlive--;
 
 	print("ZOMBIES ALIVE: ", ftos(zhZombiesAlive), "\n");
