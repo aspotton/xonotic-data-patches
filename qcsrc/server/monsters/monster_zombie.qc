@@ -69,13 +69,13 @@ float zombie_scoretarget(entity trg)
     if (trg.deadflag == DEAD_NO)
     if (trg.team != self.team)
     {
-        if((self.origin_z - trg.origin_z) < 128)
+        if(fabs(self.origin_z - trg.origin_z) < 128)
         {
             ang1 = normalize(self.origin - trg.origin);
             tmp = vlen(ang1 - v_forward);
             if(tmp > 1.5)
             {
-                traceline(self.origin + '0 0 47',trg.origin + '0 0 32',MOVE_NORMAL,self);
+                traceline(self.origin + ('0 0 47' * self.scale), trg.origin + ('0 0 32' * self.scale), MOVE_NORMAL, self);
                 if(trace_ent != trg)
                     return 0;
 
@@ -121,7 +121,8 @@ void zombie_die(vector dir)
     dummy.takedamage = DAMAGE_YES;
     dummy.event_damage = zombie_corpse_damage;
     dummy.solid      = SOLID_CORPSE;
-    setsize(dummy,self.mins,self.maxs);
+    dummy.scale = self.scale;
+    setsize(dummy,ZOMBIE_MIN * self.scale,ZOMBIE_MAX * self.scale);
 
     SUB_SetFade(dummy,time + 5,2);
 
@@ -245,7 +246,7 @@ void zombie_move()
     real_angle = vectoangles(self.steerto) - self.angles;
     self.angles_y += bound(-25, shortangle_f(real_angle_y, self.angles_y), 25);
 
-    if(vlen(self.origin - self.moveto) > 64)
+    if(vlen(self.origin - self.moveto) > 50)
     {
         movelib_move_simple(v_forward ,autocvar_g_monster_zombie_movespeed,0.6);
         if(time > self.pain_finished)
@@ -416,8 +417,8 @@ float zombie_verb_attack_run(float eval)
         if(vlen(self.origin - self.enemy.origin) > autocvar_g_monster_zombie_attack_run_range)
             return VS_CALL_NO;
 
-        if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.6)
-            return VS_CALL_NO;
+//        if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.6)
+//            return VS_CALL_NO;
 
         return verb.verb_static_value;
 
@@ -426,7 +427,7 @@ float zombie_verb_attack_run(float eval)
         pain = spawn();
         pain.owner = self;
         pain.think = zombie_runattack_damage;
-        pain.nextthink = time + autocvar_g_monster_zombie_attack_run_delay;
+        pain.nextthink = time + (autocvar_g_monster_zombie_attack_run_delay * self.scale);
 
         self.attack_finished_single = time + 0.7;
         self.frame = zombie_anim_attackrun1 + rint(random() * 2);
@@ -467,8 +468,8 @@ float zombie_verb_attack_stand(float eval)
         if(vlen(self.origin - self.enemy.origin) > autocvar_g_monster_zombie_attack_stand_range)
             return VS_CALL_NO;
 
-        if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.8)
-            return VS_CALL_NO;
+//        if(vlen(normalize(self.origin - self.enemy.origin) - v_forward) < 1.8)
+//            return VS_CALL_NO;
 
         return verb.verb_static_value;
 
@@ -477,7 +478,7 @@ float zombie_verb_attack_stand(float eval)
         pain = spawn();
         pain.owner = self;
         pain.think = zombie_runattack_damage;
-        pain.nextthink = time + autocvar_g_monster_zombie_attack_stand_delay;
+        pain.nextthink = time + (autocvar_g_monster_zombie_attack_stand_delay * self.scale);
 
         self.attack_finished_single = time + 0.7 + (random() * 0.5);
         self.frame = zombie_anim_attackstanding1 + rint(random() * 1);
@@ -504,6 +505,8 @@ void zombie_think()
     verbstack_pop(self.verbs_attack);
     if (self.enemy == world) 
         verbstack_pop(self.verbs_idle);
+    else
+        navigation_routetogoal(self, self.enemy.origin);
 
     // zombies are temporarily stunned when in pain
     if (self.pain_finished <= time)
@@ -536,7 +539,7 @@ void zombie_spawn()
     self.deadflag       = DEAD_NO;
 
     setorigin(self,self.pos1);
-    setsize(self,ZOMBIE_MIN,ZOMBIE_MAX);
+    setsize(self, ZOMBIE_MIN * self.scale, ZOMBIE_MAX * self.scale);
 }
 
 
@@ -560,7 +563,10 @@ void spawnfunc_monster_zombie()
     self.think      = zombie_spawn;
     self.nextthink  = time + 2;
 
-    traceline(self.origin + '0 0 10', self.origin - '0 0 32', MOVE_WORLDONLY, self);
+    traceline(self.origin + ('0 0 10' * self.scale), self.origin - ('0 0 20' * self.scale), MOVE_WORLDONLY, self);
+
+    if (trace_fraction == 1)
+        print("Possible bad ground position!\n");
 
     self.pos1 = trace_endpos;
     self.pos2 = self.angles;

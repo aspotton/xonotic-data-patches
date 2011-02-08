@@ -50,6 +50,11 @@ void zombiehorde_SpawnZombie()
 	self.classname = "monster_zombie";
 	self.spawnflags |= MONSTERFLAG_NORESPAWN;
 	self.origin = spawnpoint.origin;
+
+	self.scale = bound(1, random() * 4, 4);
+	if (random() * 5 < 3)
+		self.scale = bound(.25, random() * 1, 1);
+
 	spawnfunc_monster_zombie();
 	zhZombiesAlive++;
 	self = oldself;
@@ -65,7 +70,7 @@ void zombiehorde_RoundThink()
 			FOR_EACH_REALPLAYER(e)
 				centerprint(e, "-- WAITING FOR PLAYERS --\n");
 
-			self.nextthink = 1.0;
+			self.nextthink = time + 1.0;
 			break;
 		}
 		case ROUND_SETUP:
@@ -76,7 +81,7 @@ void zombiehorde_RoundThink()
 			print("ZOMBIES ALIVE: ", ftos(zhZombiesAlive), "\n");
 			zhRoundState = ROUND_STARTING;
 
-			self.nextthink = 1.0;
+			self.nextthink = time + 1.0;
 			break;
 		}
 		case ROUND_STARTING:
@@ -84,15 +89,15 @@ void zombiehorde_RoundThink()
 			local entity e;
 			FOR_EACH_REALPLAYER(e)
 				if (zhRoundDelay > 1)
-					centerprint(e, strcat("-- ROUND ", ftos(zhRoundNumber), " STARTS IN ", ftos(zhRoundDelay), " seconds --\n"));
+					centerprint(e, strcat("-- ROUND ", ftos(zhRoundNumber), " STARTS IN ", ftos(zhRoundDelay), " SECONDS --\n"));
 				else
-					centerprint(e, strcat("-- ROUND ", ftos(zhRoundNumber), " STARTS IN ", ftos(zhRoundDelay), " second --\n"));
+					centerprint(e, strcat("-- ROUND ", ftos(zhRoundNumber), " STARTS IN ", ftos(zhRoundDelay), " SECOND --\n"));
 
 			zhRoundDelay--;
 			if (zhRoundDelay == 0)
 				zhRoundState = ROUND_STARTED;
 
-			self.nextthink = 1.0;
+			self.nextthink = time + 1.0;
 			break;
 		}
 		case ROUND_STARTED:
@@ -123,7 +128,7 @@ void zombiehorde_RoundThink()
 		default:
 		{
 			dprint("Unknown Zombie Horde round state: ", ftos(zhRoundState), "\n");
-			self.nextthink = 1.0;
+			self.nextthink = time + 1.0;
 		}
 	}
 }
@@ -138,7 +143,11 @@ void zombiehorde_ZombieDied()
 	local entity e;
 	if (zhZombiesAlive + zhZombiesToSpawn > 0)
 		FOR_EACH_REALPLAYER(e)
-			centerprint(e, strcat("-- There are ", ftos(zhZombiesToSpawn + zhZombiesAlive), " zombies to go --\n"));
+			if (zhZombiesToSpawn + zhZombiesAlive > 1)
+				centerprint(e, strcat("-- There are ", ftos(zhZombiesToSpawn + zhZombiesAlive), " zombies to go --\n"));
+			else
+				centerprint(e, "-- There is just 1 zombie to go --\n");
+
 }
 
 MUTATOR_HOOKFUNCTION(zombiehorde_PlayerSpawn)
