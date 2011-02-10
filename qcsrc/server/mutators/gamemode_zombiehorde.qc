@@ -40,10 +40,38 @@ void zombiehorde_Initialize()
 	zhRoundEntity.nextthink = time + 1;
 }
 
-void zombiehorde_SpawnZombie()
+entity zombiehorde_SelectSpawnPoint()
+{
+	return SelectSpawnPoint(TRUE);
+
+	print("SHOULD NOT BE HERE\n");
+
+	local entity firstspot_new;
+	local entity spot, firstspot, waypointspot, playerlist;
+
+	firstspot = world;
+
+	// get the entire list of spots
+	firstspot = findchain(classname, "waypoint");
+
+	if (!firstspot)
+		return SelectSpawnPoint(TRUE);
+
+	firstspot_new = Spawn_FilterOutBadSpots(firstspot, playerlist, -1, 0, 0);
+	firstspot = firstspot_new;
+	spot = Spawn_WeightedPoint(firstspot, 1, 1, 5);
+
+	if (!spot)
+		spot = SelectSpawnPoint(TRUE);
+
+	return spot;
+}
+
+entity zombiehorde_SpawnZombie()
 {
 	local entity zombie, oldself, spawnpoint;
-	spawnpoint = SelectSpawnPoint(TRUE);
+
+	spawnpoint = zombiehorde_SelectSpawnPoint();
 	zombie = spawn();
 	oldself = self;
 	self = zombie;
@@ -53,11 +81,13 @@ void zombiehorde_SpawnZombie()
 
 	self.scale = bound(1, random() * 4, 4);
 	if (random() * 5 < 3)
-		self.scale = bound(.25, random() * 1, 1);
+		self.scale = bound(.5, random() * 1, 1);
 
 	spawnfunc_monster_zombie();
 	zhZombiesAlive++;
 	self = oldself;
+
+	return zombie;
 }
 
 void zombiehorde_RoundThink() 
@@ -143,11 +173,23 @@ void zombiehorde_RoundThink()
 	}
 }
 
+void zombiehorde_WaypointThink()
+{
+	self.think = SUB_Remove;
+	self.nextthink = time;
+}
+
 void zombiehorde_ZombieDied(entity attacker)
 {
 	// Zombies count as a kill!
 	attacker.totalfrags += PlayerScore_Add(attacker, SP_KILLS, 1);
 	UpdateFrags(attacker, attacker.totalfrags);
+	PlayerScore_Clear(attacker);
+
+	// Zombies create spawn points as they die
+//	entity wp = waypoint_spawn(self.origin, self.origin, WAYPOINTFLAG_GENERATED | WAYPOINTFLAG_ITEM);
+//	wp.think = zombiehorde_WaypointThink;
+//	wp.nextthink = time + 60 + (random() * 80);
 
 	zhZombiesAlive--;
 
@@ -211,6 +253,10 @@ MUTATOR_DEFINITION(gamemode_zombiehorde)
 		cvar_set("g_monster_zombie_movespeed", "100");
 		cvar_set("g_monster_zombie_stopspeed", "100");
 		cvar_set("g_monster_zombie_health", "150");
+
+		cvar_set("g_zombiehorde_increasezombies", "0");
+		cvar_set("g_zombiehorde_staggerspawn", "3");
+		cvar_set("g_zombiehorde_tracezombies", "0");
 
 		zombiehorde_Initialize();
 	}

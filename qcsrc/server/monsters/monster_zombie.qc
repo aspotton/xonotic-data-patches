@@ -1,5 +1,5 @@
-#define MONSTES_ENABLED
-#ifdef MONSTES_ENABLED
+#define MONSTERS_ENABLED
+#ifdef MONSTERS_ENABLED
 
 void zombiehorde_ZombieDied(entity attacker);
 
@@ -379,7 +379,7 @@ float zombie_verb_attack_findtarget(float eval)
 
             // Roar to other nearby zombies!
             if(clienttype(self.enemy) == CLIENTTYPE_REAL)
-            for(trg = findradius(self.origin, 1200); trg; trg = trg.chain)
+            for(trg = findradius(self.origin, 1800); trg; trg = trg.chain)
             if(trg.classname == "monster_zombie" && trg.deadflag != DEAD_DEAD && trg.enemy == world)
             {
                 trg.enemy = self.enemy;
@@ -552,7 +552,6 @@ void zombie_spawn()
     self.flags          = FL_MONSTER;
     self.deadflag       = DEAD_NO;
 
-    setorigin(self,self.pos1);
     setsize(self, ZOMBIE_MIN * self.scale, ZOMBIE_MAX * self.scale);
 }
 
@@ -578,11 +577,10 @@ void spawnfunc_monster_zombie()
     self.nextthink  = time + 2;
     self.classname = "monster_zombie";
 
-    float test = 1.0;
-    if (self.scale > 1) test = self.scale;
-    traceline(self.origin + ('0 0 10' * test), self.origin - ('0 0 20' * test), MOVE_WORLDONLY, self);
+    tracebox(self.origin + '0 0 100', ZOMBIE_MIN * self.scale, ZOMBIE_MAX * self.scale, self.origin - '0 0 10000', MOVE_WORLDONLY, self);
+    setorigin(self, trace_endpos + '0 0 .5');
 
-    self.pos1 = trace_endpos;
+    self.pos1 = trace_endpos + '0 0 .5';
     self.pos2 = self.angles;
     self.team = MAX_SHOT_DISTANCE -1;
 
@@ -593,4 +591,4 @@ void spawnfunc_monster_zombie()
     verbstack_push(self.verbs_attack, zombie_verb_attack_stand, ZV_ATTACK_STAND,0 , self);
 }
 
-#endif // MONSTES_ENABLED
+#endif // MONSTERS_ENABLED
