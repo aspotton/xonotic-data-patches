@@ -43,28 +43,6 @@ void zombiehorde_Initialize()
 entity zombiehorde_SelectSpawnPoint()
 {
 	return SelectSpawnPoint(TRUE);
-
-	print("SHOULD NOT BE HERE\n");
-
-	local entity firstspot_new;
-	local entity spot, firstspot, waypointspot, playerlist;
-
-	firstspot = world;
-
-	// get the entire list of spots
-	firstspot = findchain(classname, "waypoint");
-
-	if (!firstspot)
-		return SelectSpawnPoint(TRUE);
-
-	firstspot_new = Spawn_FilterOutBadSpots(firstspot, playerlist, -1, 0, 0);
-	firstspot = firstspot_new;
-	spot = Spawn_WeightedPoint(firstspot, 1, 1, 5);
-
-	if (!spot)
-		spot = SelectSpawnPoint(TRUE);
-
-	return spot;
 }
 
 entity zombiehorde_SpawnZombie()
