@@ -56,10 +56,7 @@ entity zombiehorde_SpawnZombie()
 	self.classname = "monster_zombie";
 	self.spawnflags |= MONSTERFLAG_NORESPAWN;
 	self.origin = spawnpoint.origin;
-
-	self.scale = bound(1, random() * 4, 4);
-	if (random() * 5 < 3)
-		self.scale = bound(.5, random() * 1, 1);
+	self.scale = 1;
 
 	spawnfunc_monster_zombie();
 	zhZombiesAlive++;
@@ -235,6 +232,9 @@ MUTATOR_DEFINITION(gamemode_zombiehorde)
 		cvar_set("g_zombiehorde_increasezombies", "0");
 		cvar_set("g_zombiehorde_staggerspawn", "3");
 		cvar_set("g_zombiehorde_tracezombies", "0");
+		cvar_set("g_zombiehorde_spawnmysterybox", "0");
+
+		precache_model("models/turrets/terrainbase.md3");
 
 		zombiehorde_Initialize();
 	}

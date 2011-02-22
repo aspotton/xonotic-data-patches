@@ -520,7 +520,7 @@ float pathlib_h_diagonal3(vector a,vector b)
 }
 
 //#define PATHLIB_USE_NODESCRAP
-#define PATHLIB_NODEEXPIRE 0.05
+//#define PATHLIB_NODEEXPIRE 0.05
 float pathlib_scraplist_cnt;
 entity newnode()
 {
@@ -541,9 +541,12 @@ entity newnode()
 #endif
     ++pathlib_made_cnt;
     n = spawn();
+    n.takedamage = DAMAGE_NO;
+    n.movetype = MOVETYPE_NONE;
 #ifdef PATHLIB_NODEEXPIRE
     n.think      = SUB_Remove;
     n.nextthink  = time + PATHLIB_NODEEXPIRE;
+#endif
     return n;
 }
 
@@ -556,7 +559,8 @@ void dumpnode(entity n)
     n.path_prev    = world;
     n.is_path_node = FALSE;
     n.owner        = scraplist;
-#else
+#endif
+#ifdef PATHLIB_NODEEXPIRE
     //n.is_path_node = FALSE;
     n.think        = SUB_Remove;
     n.nextthink    = time;
