@@ -40,6 +40,67 @@ void zombiehorde_Initialize()
 	zhRoundEntity.nextthink = time + 1;
 }
 
+void zombiehorde_MysteryBoxThink()
+{
+	if not (self.enemy)
+	{
+		self.enemy = spawn();
+		self.enemy.think = SUB_Null;
+		self.enemy.touch = SUB_Null;
+		self.enemy.event_damage = SUB_Null;
+		self.enemy.takedamage = DAMAGE_NO;
+		self.enemy.glow_color = 250;
+		self.enemy.glow_size = 25;
+		setsize(self.enemy, '-5 -5 -5', '5 5 5');
+		setorigin(self.enemy, self.origin + '0 0 5');
+	} 
+
+	float w = W_GetCycleWeapon(self.enemy, weaponorder_byid, 1, -1, 0, FALSE);
+	entity e = get_weaponinfo(w);
+	setmodel(self.enemy, e.model);
+	self.enemy.wframe = WFRAME_IDLE;
+	self.enemy.frame = 0;
+	self.enemy.velocity = '0 10 0';
+
+	// Used for cycling the weapon
+	self.enemy.cnt = e.switchweapon;
+	self.enemy.switchweapon = w;
+	self.enemy.selectweapon = w;
+
+	self.nextthink = time + 1.5;
+}
+
+void zombiehorde_MysteryBoxTouch()
+{
+	self.think = zombiehorde_MysteryBoxThink;
+	self.nextthink = time;
+	self.touch = SUB_Null;
+}
+
+entity zombiehorde_SpawnMysteryBox()
+{
+	local entity mysterybox;
+
+	mysterybox = spawn();
+	mysterybox.classname = "item_mysterybox";
+	mysterybox.origin = self.origin + v_forward * 10;
+	mysterybox.think = SUB_Null;
+	mysterybox.nextthink = 0;
+	mysterybox.solid = SOLID_BBOX;
+	mysterybox.takedamage = DAMAGE_NO;
+	mysterybox.event_damage = SUB_Null;
+	mysterybox.movetype = MOVETYPE_NONE;
+	mysterybox.touch = zombiehorde_MysteryBoxTouch;
+
+	setmodel(mysterybox, "models/turrets/terrainbase.md3");
+	setsize(mysterybox, PL_MIN, PL_MAX);
+	tracebox(mysterybox.origin + '0 0 100', PL_MIN, PL_MAX, mysterybox.origin - '0 0 1000', MOVE_WORLDONLY, mysterybox);
+	setorigin(mysterybox, trace_endpos + '0 0 .5');
+
+	pointparticles(particleeffectnum("teleport"), mysterybox.origin, '0 0 0', 1);
+}
+
+
 entity zombiehorde_SelectSpawnPoint()
 {
 	return SelectSpawnPoint(TRUE);
