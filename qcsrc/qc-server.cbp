@@ -120,6 +120,7 @@
 		<Unit filename="mutators\mutator_dodging.qh" />
 		<Unit filename="mutators\mutator_nix.qc" />
 		<Unit filename="mutators\mutators.qh" />
+		<Unit filename="mutators\mutator_znix.qc" />
 		<Unit filename="nexball.qc" />
 		<Unit filename="pathlib.qc" />
 		<Unit filename="pathlib\costs.qc" />
