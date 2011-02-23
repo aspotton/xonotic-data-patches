@@ -3,6 +3,7 @@ MUTATOR_DECLARATION(gamemode_freezetag);
 MUTATOR_DECLARATION(gamemode_keepaway);
 
 MUTATOR_DECLARATION(mutator_nix);
+MUTATOR_DECLARATION(mutator_znix);
 MUTATOR_DECLARATION(mutator_dodging);
 MUTATOR_DECLARATION(mutator_rocketflying);
 MUTATOR_DECLARATION(mutator_vampire);

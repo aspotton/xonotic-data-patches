@@ -70,6 +70,8 @@ string XonoticMutatorsDialog_toString(entity me)
 		s = strcat(s, ", ", _("MinstaGib"));
 	if(cvar("g_nix"))
 		s = strcat(s, ", ", _("NIX"));
+	if(cvar("g_znix"))
+		s = strcat(s, ", zNIX");
 	if(cvar("g_rocket_flying"))
 		s = strcat(s, ", ", _("Rocket Flying"));
 	if(cvar_string("g_weaponarena") != "0")
@@ -249,6 +251,8 @@ void XonoticMutatorsDialog_fill(entity me)
 		me.TDempty(me, 0.2);
 		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_minstagib", string_null, _("MinstaGib")));
 	me.TR(me);
+		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_znix", string_null, "zNIX"));
+	me.TR(me);
 		me.TDempty(me, 0.2);
 		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_nix", string_null, _("NIX")));
 	me.TR(me);
@@ -258,6 +262,17 @@ void XonoticMutatorsDialog_fill(entity me)
 	me.TR(me);
 		me.TDempty(me, 0.2);
 		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_weaponarena", "most", _("Most weapons")));
+
+		me.TD(me, 1, 1, e = makeXonoticCheckBox(0, "g_znix_with_laser", "with laser"));
+			setDependent(e, "g_znix", 1, 1);
+		me.TDempty(me, 0.8);
+		me.TD(me, 1, 1, e = makeXonoticCheckBox(0, "g_nix_with_laser", "with laser"));
+			setDependent(e, "g_nix", 1, 1);
+	me.TR(me);
+		me.TDempty(me, 0.2);
+		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_minstagib", string_null, "MinstaGib"));
+		me.TDempty(me, 0.2);
+		me.TD(me, 1, 2, e = makeXonoticRadioButton(1, "g_weaponarena", "most", "Most weapons"));
 			e.cvarOffValue = "0";
 	me.TR(me);
 		me.TDempty(me, 0.2);
