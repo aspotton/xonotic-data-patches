@@ -160,9 +160,10 @@ void zombiehorde_WaypointThink()
 void zombiehorde_ZombieDied(entity attacker)
 {
 	// Zombies count as a kill!
-	attacker.totalfrags += PlayerScore_Add(attacker, SP_KILLS, 1);
-	UpdateFrags(attacker, attacker.totalfrags);
-	PlayerScore_Clear(attacker);
+	PlayerScore_Add(attacker, SP_KILLS, 1);
+
+	// Zombies give 10 points per kill
+	PlayerScore_Add(attacker, SP_SCORE, 10);
 
 	// Zombies create spawn points as they die
 //	entity wp = waypoint_spawn(self.origin, self.origin, WAYPOINTFLAG_GENERATED | WAYPOINTFLAG_ITEM);
