@@ -471,6 +471,8 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 
 			givetake_given = ceil(givetake_old_amount - givetake_amount);
 			centerprint(player, strcat("Taking -", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
+			bprint("Taking -", ftos(givetake_given), " ", givetake_string_type, " from ", player.netname, "^7 for picking up a key\n");
+			
 		}
 		else // give 75% of the time
 		{
@@ -479,9 +481,12 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 				givetake_old_amount = player.armorvalue;
 				givetake_string_type = "armor";
 				if (givetake_level < 0.05) // give shield
+				//if (1) // give shield
 				{
-					self.strength_finished = 15;
-					centerprint(player, "give shield, NYI. Sorry...");
+					player.items |= IT_INVINCIBLE;
+					player.invincible_finished += 10; //autocvar_g_balance_keysgiveortake_give_shield_time;
+					centerprint(player, "Giving shield for picking up a key");
+					bprint("Giving shield to ", player.netname, "^7 for picking up a key\n");
 				}
 				else if (givetake_level < 0.25) //give high amount
 				{
@@ -489,6 +494,7 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 					player.armorvalue = givetake_amount;
 					givetake_given = ceil(givetake_amount - givetake_old_amount);
 					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname,"^7 for picking up a key\n");
 				}
 				else //give low amount
 				{
@@ -496,6 +502,7 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 					player.armorvalue = givetake_amount;
 					givetake_given = ceil(givetake_amount - givetake_old_amount);
 					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
 				}
 			}
 			else //give health
@@ -503,9 +510,12 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 				givetake_old_amount = player.health;
 				givetake_string_type = "health";
 				if (givetake_level < 0.05) // give strength
+				//if (1) // give strength
 				{
-					//self.strength_finished = 15;
-					centerprint(player, "give strength, NYI. Sorry...");
+					player.items |= IT_STRENGTH;
+					player.strength_finished += 10; //autocvar_g_balance_keysgiveortake_give_strength_time;
+					centerprint(player, "Giving strength for picking up a key");
+					bprint("Giving strength to ", player.netname, "^7 for picking up a key\n");
 				}
 				else if (givetake_level < 0.25) //give high amount
 				{
@@ -513,6 +523,7 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 					player.health = givetake_amount;
 					givetake_given = ceil(givetake_amount - givetake_old_amount);
 					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
 				}
 				else //give low amount
 				{
@@ -520,6 +531,7 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 					player.health = givetake_amount;
 					givetake_given = ceil(givetake_amount - givetake_old_amount);
 					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
 				}
 			}
 		}
