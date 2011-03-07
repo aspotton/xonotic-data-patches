@@ -285,6 +285,91 @@ void lgbeam_think()
 	}
 }
 
+void lgbeam_think2()
+{
+	self.owner.prevlgfire = time;
+	if (self != self.owner.lgbeam)
+	{
+		remove(self);
+		return;
+	}
+	if (self.owner.weaponentity.state != WS_INUSE || (self.owner.ammo_cells <= 0 && !(self.owner.items & IT_UNLIMITED_WEAPON_AMMO)) || self.owner.deadflag != DEAD_NO || !self.owner.BUTTON_ATCK || (g_freezetag && self.owner.freezetag_frozen))
+	{
+		if(self == self.owner.lgbeam)
+			self.owner.lgbeam = world;
+		remove(self);
+		return;
+	}
+
+	self.nextthink = time;
+
+	makevectors(self.owner.v_angle);
+
+	float dt, f;
+	dt = frametime;
+	if not(self.owner.items & IT_UNLIMITED_WEAPON_AMMO)
+	{
+		if(autocvar_g_balance_electro_primary_ammo)
+		{
+			dt = min(dt, self.owner.ammo_cells / autocvar_g_balance_electro_primary_ammo);
+			self.owner.ammo_cells = max(0, self.owner.ammo_cells - autocvar_g_balance_electro_primary_ammo * frametime);
+		}
+	}
+
+	W_SetupShot_Range(self.owner, TRUE, 0, "", 0, autocvar_g_balance_electro_primary_damage * dt, autocvar_g_balance_electro_primary_range);
+	WarpZone_traceline_antilag(self.owner, w_shotorg, w_shotend, MOVE_NORMAL, self.owner, ANTILAG_LATENCY(self.owner));
+
+	// apply the damage and find nearby enemies
+	if(trace_ent)
+	{
+		local entity e, spreadent;
+		vector spreadfrom = trace_endpos;
+		spreadent = trace_ent;
+
+		vector force;
+		force = w_shotdir * autocvar_g_balance_electro_primary_force + '0 0 1' * autocvar_g_balance_electro_primary_force_up;
+
+		f = ExponentialFalloff(autocvar_g_balance_electro_primary_falloff_mindist, autocvar_g_balance_electro_primary_falloff_maxdist, autocvar_g_balance_electro_primary_falloff_halflifedist, vlen(WarpZone_UnTransformOrigin(WarpZone_trace_transform, trace_endpos) - w_shotorg));
+
+		if(accuracy_isgooddamage(self.owner, trace_ent))
+			accuracy_add(self.owner, WEP_ELECTRO, 0, autocvar_g_balance_electro_primary_damage * dt * f);
+		Damage (trace_ent, self.owner, self.owner, autocvar_g_balance_electro_primary_damage * dt * f, WEP_ELECTRO, trace_endpos, force * dt);
+	
+		W_Plasma_TriggerCombo(trace_endpos, autocvar_g_balance_electro_primary_comboradius, self.owner);
+
+		for(e = findradius(spreadfrom, 500); e; e = e.chain)
+		if(e != self.owner) 
+		if(e != spreadent)
+		if(e.takedamage == DAMAGE_AIM) 
+		if(e.deadflag == DEAD_NO)
+		if(IsDifferentTeam(e, self.owner))
+		{
+			WarpZone_traceline_antilag(spreadent, spreadfrom, e.origin, MOVE_NORMAL, spreadent, ANTILAG_LATENCY(spreadent));
+			if (trace_ent)
+			if (trace_ent == e)
+			{
+				//print("Spreading from: ", spreadent.netname, ", to: ", trace_ent.netname, "\n");
+				te_lightning1(spreadent, spreadent.origin, trace_endpos);
+
+				// does 75% damage done to the entity who gets hit after the initial beam
+				Damage (e, self.owner, self.owner, autocvar_g_balance_electro_primary_damage * dt * f * 0.75, WEP_ELECTRO, e.origin, force * dt);
+			}
+		}
+	}
+
+	// draw effect
+	if(w_shotorg != self.hook_start)
+	{
+		self.SendFlags |= 2;
+		self.hook_start = w_shotorg;
+	}
+	if(w_shotend != self.hook_end)
+	{
+		self.SendFlags |= 4;
+		self.hook_end = w_shotend;
+	}
+}
+
 // experimental lightning gun
 void W_Electro_Attack3 (void)
 {
@@ -298,6 +383,31 @@ void W_Electro_Attack3 (void)
 	beam.classname = "lgbeam";
 	beam.solid = SOLID_NOT;
 	beam.think = lgbeam_think;
+	beam.owner = self;
+	beam.movetype = MOVETYPE_NONE;
+	beam.shot_spread = 0;
+	beam.bot_dodge = TRUE;
+	beam.bot_dodgerating = autocvar_g_balance_electro_primary_damage;
+	Net_LinkEntity(beam, FALSE, 0, lgbeam_send);
+
+	oldself = self;
+	self = beam;
+	self.think();
+	self = oldself;
+}
+
+// experimental experimental lightning gun
+void W_Electro_Attack4 (void)
+{
+	// only play fire sound if 0.5 sec has passed since player let go the fire button
+	if(time - self.prevlgfire > 0.5)
+		sound (self, CHAN_WEAPON, "weapons/lgbeam_fire.wav", VOL_BASE, ATTN_NORM);
+
+	entity beam, oldself;
+
+	self.lgbeam = beam = spawn();
+	beam.solid = SOLID_NOT;
+	beam.think = lgbeam_think2;
 	beam.owner = self;
 	beam.movetype = MOVETYPE_NONE;
 	beam.shot_spread = 0;
@@ -393,7 +503,7 @@ float w_electro(float req)
 				{
 					if ((!self.lgbeam) || wasfreed(self.lgbeam))
 					{
-						W_Electro_Attack3();
+						W_Electro_Attack4();
 					}
 					if(!self.BUTTON_ATCK_prev)
 					{
