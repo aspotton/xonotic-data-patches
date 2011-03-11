@@ -433,133 +433,104 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 
 	if (autocvar_g_keysgiveortake)
 	{
-		local float give_or_take = random(); // 75/25 chance of give/take
-		local float health_or_armor = random(); // 50/50 chance of health/armor
+		local float give_or_take = (random() >= 0.25) ? 1 : 0; // 75/25 chance of give/take
+		local string givetake_string_type = give_or_take > "give" : "take";
+		local float health_or_armor = (random() > 0.5) ? 1 : 0; // 50/50 chance of health/armor
+		local string healtharmor_string_type = health_or_armor ? "health" : "armor";
 		local float givetake_level = random(); // give=75/20/5 chance of small/large/super, take=75/25 chance of small/large
-		local float givetake_orig_val;
-		local float givetake_amount;
+		local float givetake_orig_val; //val before give/take
+		//local float givetake_amount;
 		local float givetake_maxamount;
 		local float givetake_given;
-		local string givetake_string_type;
 
+		if (health_or_armor) {
+			givetake_orig_val = player.health;
+		}
+		else {
+			givetake_orig_val = player.armorvalue;
+		}
 		
-		if (give_or_take < 0.25) // take 25% of the time
+		if (!give_or_take) // take 25% of the time
 		{
-			if (health_or_armor < 0.5) //take armor	
+			if (health_or_armor) //take health	
 			{
-				givetake_orig_val = player.armorvalue;
-				givetake_string_type = "armor";
-				if (givetake_level < 0.25) //take high amount
-					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_armor_high;
-				else //take low amount
-					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_armor_low;
-				givetake_amount = max(0, ceil(givetake_orig_val - givetake_maxamount));
-				player.armorvalue = givetake_amount;
-			}
-			else //take health
-			{
-				givetake_orig_val = player.health;
-				givetake_string_type = "health";
 				if (givetake_level < 0.25) //take high amount
 					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_health_high;
 				else //take low amount
 					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_health_low;
-				givetake_amount = max(10, ceil(givetake_orig_val - givetake_maxamount));
-				player.health = givetake_amount;
+				player.health = max(10, ceil(givetake_orig_val - givetake_maxamount));
+			}
+			else //take armor
+			{
+				if (givetake_level < 0.25) //take high amount
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_armor_high;
+				else //take low amount
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_take_armor_low;
+				player.armorvalue = max(0, ceil(givetake_orig_val - givetake_maxamount));
 			}
 
-			givetake_given = ceil(givetake_orig_val - givetake_amount);
-			centerprint(player, strcat("Taking -", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
-			bprint("Taking -", ftos(givetake_given), " ", givetake_string_type, " from ", player.netname, "^7 for picking up a key\n");
-			bprint("givetake_orig_val=", ftos(givetake_orig_val));
-			bprint("givetake_amount=",  ftos(givetake_amount));
-			bprint("givetake_maxamount=",  ftos(givetake_maxamount));
-			bprint("givetake_given=", ftos(givetake_given));
-			bprint("\n");
+			centerprint(player, strcat("Taking -", ftos(givetake_maxamount), " ", healtharmor_string_type, " for picking up a key"));
+			bprint("Taking -", ftos(givetake_maxamount), " ", healtharmor_string_type, " from ", player.netname, "^7 for picking up a key\n");
 		}
 		else // give 75% of the time
 		{
-			if (health_or_armor < 0.5) //give armor
+			if (health_or_armor) //give health
 			{
-				givetake_orig_val = player.armorvalue;
-				givetake_string_type = "armor";
-				
-				if (givetake_level < 0.05) // give shield
-				{
-					player.items |= IT_INVINCIBLE;
-					player.invincible_finished = max(player.invincible_finished, time) + autocvar_g_balance_keysgiveortake_give_shield_time;
-					player_powerups();
-					centerprint(player, "Giving shield for picking up a key");
-					bprint("Giving shield to ", player.netname, "^7 for picking up a key\n");
-				}
-				else if (givetake_level < 0.25) //give high amount
-				{
-					givetake_amount = min(150, ceil(givetake_orig_val + autocvar_g_balance_keysgiveortake_give_armor_high));
-					player.armorvalue = givetake_amount;
-					givetake_given = ceil(givetake_amount - givetake_orig_val);
-					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
-					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname,"^7 for picking up a key\n");
-					bprint("givetake_orig_val=", ftos(givetake_orig_val));
-					bprint("givetake_amount=",  ftos(givetake_amount));
-					bprint("givetake_maxamount=",  ftos(givetake_maxamount));
-					bprint("givetake_given=", ftos(givetake_given));
-					bprint("\n");
-				}
-				else //give low amount
-				{
-					givetake_amount = min(150, ceil(givetake_orig_val + autocvar_g_balance_keysgiveortake_give_armor_low));
-					player.armorvalue = givetake_amount;
-					givetake_given = ceil(givetake_amount - givetake_orig_val);
-					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
-					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
-					bprint("givetake_orig_val=", ftos(givetake_orig_val));
-					bprint("givetake_amount=",  ftos(givetake_amount));
-					bprint("givetake_maxamount=",  ftos(givetake_maxamount));
-					bprint("givetake_given=", ftos(givetake_given));
-					bprint("\n");
-				}
-			}
-			else //give health
-			{
-				givetake_orig_val = player.health;
-				givetake_string_type = "health";
-				
 				if (givetake_level < 0.05) // give strength
 				{
 					player.items |= IT_STRENGTH;
 					player.strength_finished = max(player.strength_finished, time) + autocvar_g_balance_keysgiveortake_give_strength_time;
 					player_powerups();
-					centerprint(player, "Giving strength for picking up a key");
-					bprint("Giving strength to ", player.netname, "^7 for picking up a key\n");
+					centerprint(player, "Giving Strength for picking up a key");
+					bprint("Giving Strength to ", player.netname, "^7 for picking up a key\n");
 				}
 				else if (givetake_level < 0.25) //give high amount
 				{
-					givetake_amount = min(100, ceil(givetake_orig_val + autocvar_g_balance_keysgiveortake_give_health_high));
-					player.health = givetake_amount;
-					givetake_given = ceil(givetake_amount - givetake_orig_val);
-					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
-					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
-					bprint("givetake_orig_val=", ftos(givetake_orig_val));
-					bprint("givetake_amount=",  ftos(givetake_amount));
-					bprint("givetake_maxamount=",  ftos(givetake_maxamount));
-					bprint("givetake_given=", ftos(givetake_given));
-					bprint("\n");
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_give_health_high;
+					player.health = min(100, ceil(givetake_orig_val + givetake_maxamount));
+					centerprint(player, strcat("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " to ", player.netname, "^7 for picking up a key\n");
 				}
 				else //give low amount
 				{
-					givetake_amount = min(100, ceil(givetake_orig_val + autocvar_g_balance_keysgiveortake_give_health_low));
-					player.health = givetake_amount;
-					givetake_given = ceil(givetake_amount - givetake_orig_val);
-					centerprint(player, strcat("Giving +", ftos(givetake_given), " ", givetake_string_type, " for picking up a key"));
-					bprint("Giving +", ftos(givetake_given), " ", givetake_string_type, " to ", player.netname, "^7 for picking up a key\n");
-					bprint("givetake_orig_val=", ftos(givetake_orig_val));
-					bprint("givetake_amount=",  ftos(givetake_amount));
-					bprint("givetake_maxamount=",  ftos(givetake_maxamount));
-					bprint("givetake_given=", ftos(givetake_given));
-					bprint("\n");
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_give_health_low;
+					player.health = min(100, ceil(givetake_orig_val + givetake_maxamount));
+					centerprint(player, strcat("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " to ", player.netname, "^7 for picking up a key\n");
+				}
+			}
+			else //give armor
+			{
+				if (givetake_level < 0.05) // give shield
+				{
+					player.items |= IT_INVINCIBLE;
+					player.invincible_finished = max(player.invincible_finished, time) + autocvar_g_balance_keysgiveortake_give_shield_time;
+					player_powerups();
+					centerprint(player, "Giving Shield for picking up a key");
+					bprint("Giving Shield to ", player.netname, "^7 for picking up a key\n");
+				}
+				else if (givetake_level < 0.25) //give high amount
+				{
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_give_armor_high;
+					player.armorvalue = min(150, ceil(givetake_orig_val + givetake_maxamount));
+					centerprint(player, strcat("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " to ", player.netname, "^7 for picking up a key\n");
+				}
+				else //give low amount
+				{
+					givetake_maxamount = autocvar_g_balance_keysgiveortake_give_armor_low;
+					player.armorvalue = min(150, ceil(givetake_orig_val + givetake_maxamount));
+					centerprint(player, strcat("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " for picking up a key"));
+					bprint("Giving +", ftos(givetake_maxamount), " ", healtharmor_string_type, " to ", player.netname, "^7 for picking up a key\n");
 				}
 			}
 		}
+
+		/*bprint("givetake_orig_val=", ftos(givetake_orig_val));
+		bprint("givetake_amount=",  ftos(givetake_amount));
+		bprint("givetake_maxamount=",  ftos(givetake_maxamount));
+		bprint("givetake_given=", ftos(givetake_given));
+		bprint("\n");*/
 	}
 
 	kh_Key_AssignTo(key, player); // this also updates .kh_state
