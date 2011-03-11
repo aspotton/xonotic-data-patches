@@ -434,7 +434,7 @@ void kh_Key_Collect(entity key, entity player)  //a player picks up a dropped ke
 	if (autocvar_g_keysgiveortake)
 	{
 		local float give_or_take = (random() >= 0.25) ? 1 : 0; // 75/25 chance of give/take
-		local string givetake_string_type = give_or_take > "give" : "take";
+		local string givetake_string_type = give_or_take ? "give" : "take";
 		local float health_or_armor = (random() > 0.5) ? 1 : 0; // 50/50 chance of health/armor
 		local string healtharmor_string_type = health_or_armor ? "health" : "armor";
 		local float givetake_level = random(); // give=75/20/5 chance of small/large/super, take=75/25 chance of small/large
