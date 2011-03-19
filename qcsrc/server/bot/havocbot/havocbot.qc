@@ -145,6 +145,31 @@ void havocbot_ai()
 		bot_aimdir(v, -1);
 	}
 	havocbot_movetogoal();
+
+	// if the bot is not attacking, consider reloading weapons
+	if not(self.aistatus & AI_STATUS_ATTACKING)
+	{
+		float i;
+		entity e;
+
+		// we are currently holding a weapon that's not fully loaded, reload it
+		if(skill >= 2) // bots can only reload the held weapon on purpose past this skill
+		if(self.clip_load < self.clip_size)
+			self.impulse = 20; // "press" the reload button, not sure if this is done right
+
+		// if we're not reloading a weapon, switch to any weapon in our invnetory that's not fully loaded to reload it next
+		// the code above executes next frame, starting the reloading then
+		if(skill >= 5) // bots can only look for unloaded weapons past this skill
+		if(self.clip_load >= 0) // only if we're not reloading a weapon already
+		{
+			for(i = WEP_FIRST; i <= WEP_LAST; ++i)
+			{
+				e = get_weaponinfo(i);
+				if ((e.spawnflags & WEP_FLAG_RELOADABLE) && (self.weapon_load[i] < cvar(strcat("g_balance_", e.netname, "_reload_ammo"))))
+					self.switchweapon = i;
+			}
+		}
+	}
 };
 
 void havocbot_keyboard_movement(vector destorg)
@@ -170,7 +195,7 @@ void havocbot_keyboard_movement(vector destorg)
 
 	local float trigger, trigger1;
 	blend = bound(0,sk*0.1,1);
-	trigger = autocvar_bot_ai_keyboard_treshold;
+	trigger = autocvar_bot_ai_keyboard_threshold;
 	trigger1 = 0 - trigger;
 
 	// categorize forward movement
@@ -232,12 +257,14 @@ void havocbot_bunnyhop(vector dir)
 		return;
 
 	// Don't jump when using some weapons
+	/*
 	if(self.aistatus & AI_STATUS_ATTACKING)
-	if(self.weapon & WEP_CAMPINGRIFLE)
+	if(self.weapon == WEP_SNIPERRIFLE)
 		return;
 
 	if(self.goalcurrent.classname == "player")
 		return;
+	*/
 
 	maxspeed = autocvar_sv_maxspeed;
 
@@ -338,6 +365,7 @@ void havocbot_bunnyhop(vector dir)
 	}
 
 	// Release jump button
+	if(!cvar("sv_pogostick"))
 	if(self.flags & FL_ONGROUND == 0)
 	{
 		if(self.velocity_z < 0 || vlen(self.velocity)<maxspeed)
@@ -890,7 +918,7 @@ void havocbot_chooseenemy()
 
 		// I want to do a second scan if no enemy was found or I don't have weapons
 		// TODO: Perform the scan when using the rifle (requires changes on the rifle code)
-		if(best || self.weapons) // || self.weapon == WEP_CAMPINGRIFLE
+		if(best || self.weapons) // || self.weapon == WEP_SNIPERRIFLE
 			break;
 		if(i)
 			break;
@@ -910,6 +938,31 @@ void havocbot_chooseenemy()
 	self.enemy = best;
 	self.havocbot_stickenemy = TRUE;
 };
+
+float havocbot_chooseweapon_checkreload(float new_weapon)
+{
+	// bots under this skill cannot find unloaded weapons to reload idly when not in combat,
+	// so skip this for them, or they'll never get to reload their weapons at all.
+	// this also allows bots under this skill to be more stupid, and reload more often during combat :)
+	if(skill < 5)
+		return FALSE;
+
+	// if this weapon is scheduled for reloading, don't switch to it during combat
+	if (self.weapon_load[new_weapon] < 0)
+	{
+		local float i, other_weapon_available;
+		for(i = WEP_FIRST; i <= WEP_LAST; ++i)
+		{
+			// if we are out of ammo for all other weapons, it's an emergency to switch to anything else
+			if (weapon_action(i, WR_CHECKAMMO1) + weapon_action(i, WR_CHECKAMMO2))
+				other_weapon_available = TRUE;
+		}
+		if(other_weapon_available)
+			return TRUE;
+	}
+
+	return FALSE;
+}
 
 void havocbot_chooseweapon()
 {
@@ -943,29 +996,8 @@ void havocbot_chooseweapon()
 	if(i < 1)
 		return;
 
-	// Workaround for rifle reloading (..)
-	if(self.weapon == WEP_CAMPINGRIFLE)
-	if(i < autocvar_g_balance_campingrifle_reloadtime + 1)
-		return;
-
 	local float w;
-	local float rocket  ; rocket   =-1000;
-	local float nex     ; nex      =-1000;
-	local float hagar   ; hagar    =-1000;
-	local float grenade ; grenade  =-1000;
-	local float mine    ; mine     =-1000;
-	local float electro ; electro  =-1000;
-	local float crylink ; crylink  =-1000;
-	local float uzi     ; uzi      =-1000;
-	local float shotgun ; shotgun  =-1000;
-	local float campingrifle ; campingrifle  =-1000;
-	local float laser   ; laser    =-1000;
-	local float minstanex ; minstanex =-1000;
-	local float bestscore; bestscore = 0;
-	local float bestweapon; bestweapon=self.switchweapon;
 	local float distance; distance=bound(10,vlen(self.origin-self.enemy.origin)-200,10000);
-	local float maxdelaytime=0.5;
-	local float spreadpenalty=10;
 
 	// Should it do a weapon combo?
 	local float af, ct, combo_time, combo;
@@ -996,8 +1028,9 @@ void havocbot_chooseweapon()
 		if ( distance > bot_distance_far ) {
 			for(i=0; i < WEP_COUNT && bot_weapons_far[i] != -1 ; ++i){
 				w = bot_weapons_far[i];
-				if ( client_hasweapon(self, w, TRUE, FALSE) ){
-					if ( self.weapon == w && combo)
+				if ( client_hasweapon(self, w, TRUE, FALSE) )
+				{
+					if ((self.weapon == w && combo) || havocbot_chooseweapon_checkreload(w))
 						continue;
 					self.switchweapon = w;
 					return;
@@ -1009,8 +1042,9 @@ void havocbot_chooseweapon()
 		if ( distance > bot_distance_close) {
 			for(i=0; i < WEP_COUNT && bot_weapons_mid[i] != -1 ; ++i){
 				w = bot_weapons_mid[i];
-				if ( client_hasweapon(self, w, TRUE, FALSE) ){
-					if ( self.weapon == w && combo)
+				if ( client_hasweapon(self, w, TRUE, FALSE) )
+				{
+					if ((self.weapon == w && combo) || havocbot_chooseweapon_checkreload(w))
 						continue;
 					self.switchweapon = w;
 					return;
@@ -1021,8 +1055,9 @@ void havocbot_chooseweapon()
 		// Choose weapons for close distance
 		for(i=0; i < WEP_COUNT && bot_weapons_close[i] != -1 ; ++i){
 			w = bot_weapons_close[i];
-			if ( client_hasweapon(self, w, TRUE, FALSE) ){
-				if ( self.weapon == w && combo)
+			if ( client_hasweapon(self, w, TRUE, FALSE) )
+			{
+				if ((self.weapon == w && combo) || havocbot_chooseweapon_checkreload(w))
 					continue;
 				self.switchweapon = w;
 				return;
@@ -1200,7 +1235,7 @@ vector havocbot_dodge()
 {
 	// LordHavoc: disabled because this is too expensive
 	return '0 0 0';
-	/*
+#if 0
 	local entity head;
 	local vector dodge, v, n;
 	local float danger, bestdanger, vl, d;
@@ -1245,5 +1280,5 @@ vector havocbot_dodge()
 		head = head.chain;
 	}
 	return dodge;
-	*/
+#endif
 };
