@@ -866,6 +866,7 @@ void CSQC_UpdateView(float w, float h)
 
 			// TrueAim check
 			float shottype;
+
 			// wcross_origin = '0.5 0 0' * vid_conwidth + '0 0.5 0' * vid_conheight;
 			wcross_origin = project_3d_to_2d(view_origin + MAX_SHOT_DISTANCE * view_forward);
 			wcross_origin_z = 0;
@@ -1065,29 +1066,30 @@ void CSQC_UpdateView(float w, float h)
 			wcross_alpha *= 1 - autocvar__menu_alpha;
 			wcross_size = drawgetimagesize(wcross_name) * wcross_scale;
 
-			if (autocvar_crosshair_ring)
+			// crosshair rings for weapon stats
+			if ((autocvar_crosshair_ring) || (autocvar_crosshair_ring_reload))
 			{
-				float ring_value, ring_alpha, ring_inner_value, ring_inner_alpha;
+				// declarations and stats
+				float ring_value, ring_scale, ring_alpha, ring_inner_value, ring_inner_alpha;
 				string ring_image, ring_inner_image;
 				vector ring_rgb, ring_inner_rgb;
 				
-				float ring_scale = autocvar_crosshair_ring_size;
-				
+				ring_scale = autocvar_crosshair_ring_size;
+
+				float weapon_clipload, weapon_clipsize;
+				weapon_clipload = getstati(STAT_WEAPON_CLIPLOAD);
+				weapon_clipsize = getstati(STAT_WEAPON_CLIPSIZE);
+
 				float nex_charge, nex_chargepool;
 				nex_charge = getstatf(STAT_NEX_CHARGE);
 				nex_chargepool = getstatf(STAT_NEX_CHARGEPOOL);
-				
+
 				if(nex_charge_movingavg == 0) // this should only happen if we have just loaded up the game
 					nex_charge_movingavg = nex_charge;
-				
-				if (activeweapon == WEP_SNIPERRIFLE && cr_maxbullets && autocvar_crosshair_ring_sniperrifle) // ring around crosshair representing bullets left in camping rifle clip
-				{ 
-					ring_value = bound(0, getstati(STAT_BULLETS_LOADED) / cr_maxbullets, 1); // if you later need to use the count of bullets in another place, then add a float for it. For now, no need to.
-					ring_alpha = wcross_alpha * autocvar_crosshair_ring_sniperrifle_alpha;
-					ring_image = "gfx/crosshair_ring_sniperrifle.tga";
-					ring_rgb = wcross_color;
-				}
-				else if (activeweapon == WEP_NEX && nex_charge && autocvar_crosshair_ring_nex) // ring around crosshair representing velocity-dependent damage for the nex
+					
+
+				// handle the values
+				if (activeweapon == WEP_NEX && nex_charge && autocvar_crosshair_ring_nex) // ring around crosshair representing velocity-dependent damage for the nex
 				{
 					if (nex_chargepool || use_nex_chargepool) { 
 						use_nex_chargepool = 1; 
@@ -1098,26 +1100,53 @@ void CSQC_UpdateView(float w, float h)
 					}
 						
 					ring_inner_alpha = wcross_alpha * autocvar_crosshair_ring_nex_inner_alpha;
-					ring_inner_image = "gfx/crosshair_ring_inner.tga";
 					ring_inner_rgb = eX * autocvar_crosshair_ring_nex_inner_color_red + eY * autocvar_crosshair_ring_nex_inner_color_green + eZ * autocvar_crosshair_ring_nex_inner_color_blue;
-
+					ring_inner_image = "gfx/crosshair_ring_inner.tga";
+					
 					// draw the outer ring to show the current charge of the weapon
 					ring_value = nex_charge;
 					ring_alpha = wcross_alpha * autocvar_crosshair_ring_nex_alpha;
-					ring_image = "gfx/crosshair_ring_nexgun.tga";
 					ring_rgb = wcross_color;
+					ring_image = "gfx/crosshair_ring_nexgun.tga";
 				}
 				else if (activeweapon == WEP_MINE_LAYER && minelayer_maxmines && autocvar_crosshair_ring_minelayer) 
 				{
 					ring_value = bound(0, getstati(STAT_LAYED_MINES) / minelayer_maxmines, 1); // if you later need to use the count of bullets in another place, then add a float for it. For now, no need to.
 					ring_alpha = wcross_alpha * autocvar_crosshair_ring_minelayer_alpha;
-					ring_image = "gfx/crosshair_ring.tga";
 					ring_rgb = wcross_color;
+					ring_image = "gfx/crosshair_ring.tga";
 				}
-				
-				if (autocvar_crosshair_ring_inner && ring_inner_value) // lets draw a ring inside a ring so you can ring while you ring
+
+				if(autocvar_crosshair_ring_reload && weapon_clipsize) // forces there to be only an ammo ring 
+				{
+					// if the main ring is already used by another weapon, instead use the inner one for ammo.
+					// inner ring is secondary anyway and doesn't matter as much as main ring, so overriding it is no issue.
+					if(ring_value && autocvar_crosshair_ring_reload_inner)
+					{
+						ring_inner_value = bound(0, weapon_clipload / weapon_clipsize, 1);
+						ring_inner_alpha = autocvar_crosshair_ring_reload_alpha;
+						ring_inner_rgb = wcross_color;
+						ring_inner_image = "gfx/crosshair_ring_inner.tga";
+					}
+					else
+					{
+						ring_value = bound(0, weapon_clipload / weapon_clipsize, 1);
+						ring_scale = autocvar_crosshair_ring_reload_size;
+						ring_alpha = autocvar_crosshair_ring_reload_alpha;
+						ring_rgb = wcross_color;
+					
+						// Note: This is to stop Taoki from complaining that the image doesn't match all potential balances.
+						// if a new image for another weapon is added, add the code (and its respective file/value) here
+						if ((activeweapon == WEP_SNIPERRIFLE) && (weapon_clipsize == 80))
+							ring_image = "gfx/crosshair_ring_sniperrifle.tga";
+						else
+							ring_image = "gfx/crosshair_ring.tga";
+					}
+				}
+
+				if ((autocvar_crosshair_ring_inner || autocvar_crosshair_ring_reload_inner) && ring_inner_value) // lets draw a ring inside a ring so you can ring while you ring
 					DrawCircleClippedPic(wcross_origin, wcross_size_x * ring_scale, ring_inner_image, ring_inner_value, ring_inner_rgb, ring_inner_alpha, DRAWFLAG_ADDITIVE);
-				
+
 				if (ring_value)
 					DrawCircleClippedPic(wcross_origin, wcross_size_x * ring_scale, ring_image, ring_value, ring_rgb, ring_alpha, DRAWFLAG_ADDITIVE);
 			}
