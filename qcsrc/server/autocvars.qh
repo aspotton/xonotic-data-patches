@@ -1240,3 +1240,5 @@ float autocvar_waypoint_benchmark;
 float autocvar_welcome_message_time;
 float autocvar_sv_gameplayfix_gravityunaffectedbyticrate;
 float autocvar_g_trueaim_minrange;
+
+float autocvar_g_enable_skybox_weapon_collisions;
