@@ -1991,7 +1991,12 @@ float SUB_NoImpactCheck()
 		checkclient();
 	}
     if (trace_dphitq3surfaceflags & Q3SURFACEFLAG_NOIMPACT)
-        return 1;
+    {
+        if (autocvar_g_enable_skybox_weapon_collisions)
+            return 0;
+        else
+            return 1;
+    }
     if (other == world && self.size != '0 0 0')
     {
         vector tic;
