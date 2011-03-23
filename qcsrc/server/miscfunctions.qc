@@ -2005,13 +2005,10 @@ float SUB_NoImpactCheck()
 		dprint("A hit happened with zero hit contents... DEBUG THIS, this should never happen for projectiles! Projectile will self-destruct.\n");
 		checkclient();
 	}
+    if (autocvar_g_enable_skybox_weapon_collisions && (trace_dphitq3surfaceflags & Q3SURFACEFLAG_SKY))
+        return 0;
     if (trace_dphitq3surfaceflags & Q3SURFACEFLAG_NOIMPACT)
-    {
-        if (autocvar_g_enable_skybox_weapon_collisions)
-            return 0;
-        else
-            return 1;
-    }
+        return 1;
     if (other == world && self.size != '0 0 0')
     {
         vector tic;
