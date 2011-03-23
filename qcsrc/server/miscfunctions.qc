@@ -1990,13 +1990,10 @@ float SUB_NoImpactCheck()
 		dprint(sprintf(_("A hit from a projectile happened with no hit contents! DEBUG THIS, this should never happen for projectiles! Profectile will self-destruct. (edict: %d, classname: %s, origin: %s)\n"), num_for_edict(self), self.classname, vtos(self.origin)));
 		checkclient();
 	}
+    if (autocvar_g_enable_skybox_weapon_collisions && (trace_dphitq3surfaceflags & Q3SURFACEFLAG_SKY))
+        return 0;
     if (trace_dphitq3surfaceflags & Q3SURFACEFLAG_NOIMPACT)
-    {
-        if (autocvar_g_enable_skybox_weapon_collisions)
-            return 0;
-        else
-            return 1;
-    }
+        return 1;
     if (other == world && self.size != '0 0 0')
     {
         vector tic;
