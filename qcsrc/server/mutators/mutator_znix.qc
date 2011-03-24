@@ -130,7 +130,10 @@ void ZNIX_GiveCurrentWeapon()
 	if(self.switchweapon != self.znix_weapon)
 		if(!client_hasweapon(self, self.switchweapon, TRUE, FALSE))
 			if(client_hasweapon(self, self.znix_weapon, TRUE, FALSE))
+			{
 				W_SwitchWeapon(self.znix_weapon);
+				bprint(self.netname, "^7 was assigned the ^3", W_Name(self.znix_weapon), "\n");
+			}
 }
 
 void ZNIX_precache()
