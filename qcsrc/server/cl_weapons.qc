@@ -402,7 +402,14 @@ void W_WeaponFrame()
 		c = c + 1;
 		if(wb && ((self.weapons & wb) == 0))
 		{
-			W_SwitchWeapon_Force(self, w_getbestweapon(self));
+			if (!autocvar_g_znix && !autocvar_g_znix_with_laser)
+			{
+				W_SwitchWeapon_Force(self, w_getbestweapon(self));
+			}
+			else
+			{
+				//dont switch...
+			}
 			wb = 0;
 		}
 		if(wb)
