@@ -4,6 +4,10 @@ float g_znix_with_laser;
 .float znix_weapon;
 .float znix_weapon_ammo;
 .float znix_nextweapon;
+.float znix_lastweapon1;
+.float znix_lastweapon2;
+.float znix_lastweapon3;
+.float znix_lastweapon4;
 .float znix_nextweapon_ammo;
 .float znix_lastchange_id;
 .float znix_lastinfotime;
@@ -29,11 +33,19 @@ float ZNIX_CanChooseWeapon(float wpn)
 	}
 	else
 	{
+		if (self.znix_lastweapon1 == wpn ||
+		    self.znix_lastweapon2 == wpn ||
+		    self.znix_lastweapon3 == wpn ||
+		    self.znix_lastweapon4 == wpn)
+		{
+			return FALSE;
+		}
 		if(wpn == WEP_LASER) // && g_znix_with_laser) //fuck the laser
 			return FALSE;
 		if not(e.spawnflags & WEP_FLAG_NORMAL)
 			return FALSE;
 	}
+
 	return TRUE;
 }
 void ZNIX_ChooseNextWeapon()
@@ -131,6 +143,10 @@ void ZNIX_GiveCurrentWeapon()
 		if(!client_hasweapon(self, self.switchweapon, TRUE, FALSE))
 			if(client_hasweapon(self, self.znix_weapon, TRUE, FALSE))
 			{
+				self.znix_lastweapon4 = self.znix_lastweapon3;
+				self.znix_lastweapon3 = self.znix_lastweapon2;
+				self.znix_lastweapon2 = self.znix_lastweapon1;
+				self.znix_lastweapon1 = self.znix_weapon;
 				W_SwitchWeapon(self.znix_weapon);
 				bprint(self.netname, "^7 was assigned the ^3", W_Name(self.znix_weapon), "\n");
 			}
@@ -238,6 +254,10 @@ MUTATOR_DEFINITION(mutator_znix)
 		{
 			e.znix_nextchange = time;
 			e.znix_nextweapon = 0;
+			e.znix_lastweapon4 = 0;
+			e.znix_lastweapon3 = 0;
+			e.znix_lastweapon2 = 0;
+			e.znix_lastweapon1 = 0;
 
 			if(e.deadflag == DEAD_NO)
 			{
