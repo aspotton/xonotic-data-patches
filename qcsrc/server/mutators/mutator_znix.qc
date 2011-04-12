@@ -1,8 +1,8 @@
 float g_znix_with_laser;
 
-.float znix_nextchange;
 .float znix_weapon;
 .float znix_weapon_ammo;
+.float znix_nextchange;
 .float znix_nextweapon;
 .float znix_lastweapon1;
 .float znix_lastweapon2;
@@ -12,6 +12,7 @@ float g_znix_with_laser;
 .float znix_lastchange_id;
 .float znix_lastinfotime;
 .float znix_nextincr;
+.float znix_curweapon;
 
 .float znix_save_cells;
 .float znix_save_shells;
@@ -143,12 +144,17 @@ void ZNIX_GiveCurrentWeapon()
 		if(!client_hasweapon(self, self.switchweapon, TRUE, FALSE))
 			if(client_hasweapon(self, self.znix_weapon, TRUE, FALSE))
 			{
-				self.znix_lastweapon4 = self.znix_lastweapon3;
-				self.znix_lastweapon3 = self.znix_lastweapon2;
-				self.znix_lastweapon2 = self.znix_lastweapon1;
-				self.znix_lastweapon1 = self.znix_weapon;
 				W_SwitchWeapon(self.znix_weapon);
-				bprint(self.netname, "^7 was assigned the ^3", W_Name(self.znix_weapon), "\n");
+
+				if (self.znix_curweapon != self.znix_weapon)
+				{
+					self.znix_curweapon = self.znix_weapon;
+					self.znix_lastweapon4 = self.znix_lastweapon3;
+					self.znix_lastweapon3 = self.znix_lastweapon2;
+					self.znix_lastweapon2 = self.znix_lastweapon1;
+					self.znix_lastweapon1 = self.znix_weapon;
+					bprint(self.netname, "^7 was assigned the ^3", W_Name(self.znix_weapon), "\n");
+				}
 			}
 }
 
