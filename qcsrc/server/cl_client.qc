@@ -1539,7 +1539,7 @@ void ClientConnect (void)
 	DecodeLevelParms();
 
 #ifdef WATERMARK
-	sprint(self, strcat("^4SVQC Build information: ", WATERMARK(), "\n"));
+	sprint(self, strcat("^4SVQC Build information: ^1", WATERMARK(), "\n"));
 #endif
 
 	self.classname = "player_joining";
@@ -2629,6 +2629,8 @@ void() nexball_setstatus;
 .float items_added;
 void PlayerPreThink (void)
 {
+	WarpZone_PlayerPhysics_FixVAngle();
+
 	self.stat_game_starttime = game_starttime;
 	self.stat_allow_oldnexbeam = autocvar_g_allow_oldnexbeam;
 	self.stat_leadlimit = autocvar_leadlimit;
