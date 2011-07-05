@@ -1277,7 +1277,9 @@ void ClientKill_Now()
 	    }
 	}
 	
-	remove(self.killindicator);
+	if(self.killindicator && !wasfreed(self.killindicator))
+        remove(self.killindicator);
+	
 	self.killindicator = world;
 
 	if(self.killindicator_teamchange)
@@ -2370,7 +2372,7 @@ void SpectateCopy(entity spectatee) {
 	self.dmg_save = spectatee.dmg_save;
 	self.dmg_inflictor = spectatee.dmg_inflictor;
 	self.angles = spectatee.v_angle;
-	//self.fixangle = TRUE;
+	self.fixangle = TRUE;
 	setorigin(self, spectatee.origin);
 	setsize(self, spectatee.mins, spectatee.maxs);
 	SetZoomState(spectatee.zoomstate);
@@ -2384,7 +2386,7 @@ void SpectateCopy(entity spectatee) {
     {
         setorigin(self, spectatee.origin);
         self.velocity = spectatee.vehicle.velocity;
-        //self.v_angle += spectatee.vehicle.angles;
+        self.v_angle += spectatee.vehicle.angles;
         //self.v_angle_x *= -1;
         self.vehicle_health = spectatee.vehicle_health;
         self.vehicle_shield = spectatee.vehicle_shield;
@@ -2620,6 +2622,8 @@ void SpectatorThink()
 				return;
 			}
 		}
+		if(!SpectateUpdate())
+			PutObserverInServer();
 	}
 
 	PrintWelcomeMessage(self);
@@ -3131,7 +3135,7 @@ void PlayerPostThink (void)
 	} else if (self.classname == "spectator") {
 		//do nothing
 	}
-
+	
 	/*
 	float i;
 	for(i = 0; i < 1000; ++i)
@@ -3172,7 +3176,8 @@ void PlayerPostThink (void)
 	else
 	{
 		if(self.showheadshotbbox)
-			remove(self.showheadshotbbox);
+			if(self.showheadshotbbox && !wasfreed(self.showheadshotbbox))
+                remove(self.showheadshotbbox);
 	}
 
 	playerdemo_write();
