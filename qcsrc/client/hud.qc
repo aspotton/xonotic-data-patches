@@ -600,7 +600,7 @@ float GetAmmoTypeForWep(float i)
 		case WEP_HLAC: return 3;
 		case WEP_MINSTANEX: return 3;
 		case WEP_NEX: return 3;
-		case WEP_SNIPERRIFLE: return 1;
+		case WEP_RIFLE: return 1;
 		case WEP_HAGAR: return 2;
 		case WEP_ROCKET_LAUNCHER: return 2;
 		case WEP_SEEKER: return 2;
@@ -614,7 +614,7 @@ void HUD_Weapons(void)
 {
 	float f, screen_ar;
 	float center_x, center_y;
-
+    if(hud != HUD_NORMAL) return;
 	if(!autocvar__hud_configure)
 	{
 		if(!autocvar_hud_panel_weapons) return;
@@ -1019,6 +1019,7 @@ void DrawAmmoItem(vector myPos, vector mySize, float itemcode, float currently_s
 
 void HUD_Ammo(void)
 {
+    if(hud != HUD_NORMAL) return;
 	if(!autocvar__hud_configure)
 	{
 		if(!autocvar_hud_panel_ammo) return;
@@ -1319,6 +1320,7 @@ void HUD_HealthArmor(void)
 	if(!autocvar__hud_configure)
 	{
 		if(!autocvar_hud_panel_healtharmor) return;
+		if(hud != HUD_NORMAL) return;
 		if(spectatee_status == -1) return;
 
 		health = getstati(STAT_HEALTH);
@@ -1680,7 +1682,7 @@ void HUD_KillNotify(string s1, string s2, string s3, float type, float msg) // s
 	} else if(msg == MSG_KILL) {
 		w = DEATH_WEAPONOF(type);
 		if(WEP_VALID(w)) {
-			if((w == WEP_SNIPERRIFLE || w == WEP_MINSTANEX) && type & HITTYPE_HEADSHOT) // all headshot weapons go here
+			if((w == WEP_RIFLE || w == WEP_MINSTANEX) && type & HITTYPE_HEADSHOT) // all headshot weapons go here
 				HUD_KillNotify_Push(s1, s2, 1, DEATH_HEADSHOT);
 			else
 				HUD_KillNotify_Push(s1, s2, 1, type);
@@ -1755,7 +1757,7 @@ void HUD_KillNotify(string s1, string s2, string s3, float type, float msg) // s
 			HUD_KillNotify_Push(s1, s2, 1, DEATH_HURTTRIGGER);
 			if(alsoprint)
 				print(sprintf(_("^1%s^1 was thrown into a world of hurt by %s\n"), s2, s1));
-		} else if(type == DEATH_SBCRUSH) {
+		} else if(type == DEATH_VHCRUSH) {
 			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
 			if(alsoprint)
 				print (sprintf(_("^1%s^1 was crushed by %s\n"), s2, s1));
@@ -1783,6 +1785,18 @@ void HUD_KillNotify(string s1, string s2, string s3, float type, float msg) // s
 			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
 			if(alsoprint)
 				print (sprintf(_("^1%s^1 dies when %s^1's wakizashi dies.\n"), s2, s1));
+		} else if(type == DEATH_RAPTOR_CANNON) {
+			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
+			if(alsoprint)
+				print (sprintf(_("^1%s^1 nailed to hell by %s\n"), s2, s1));
+		} else if(type == DEATH_RAPTOR_BOMB) {
+			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
+			if(alsoprint)
+				print (sprintf(_("^1%s^1 cluster crushed by %s\n"), s2, s1));
+		} else if(type == DEATH_RAPTOR_DEATH) {
+			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
+			if(alsoprint)
+				print (sprintf(_("^1%s^1 dies when %s^1's raptor dies.\n"), s2, s1));
 		} else if(type == DEATH_TURRET) {
 			HUD_KillNotify_Push(s1, s2, 1, DEATH_GENERIC);
 			if(alsoprint)
@@ -2034,9 +2048,9 @@ void HUD_Centerprint(string s1, string s2, float type, float msg)
 	} else if(msg == MSG_KILL) {
 		if (type == KILL_TEAM_RED || type == KILL_TEAM_BLUE) {
 			if(gentle) {
-				centerprint(strcat(DAMAGE_CENTERPRINT_SPACER, sprintf(_("^1Moron! You went against %s, a team mate!"), s1)));
+				centerprint(strcat(DAMAGE_CENTERPRINT_SPACER, sprintf(_("^1Moron! You went against ^7%s^1, a team mate!"), s1)));
 			} else {
-				centerprint(strcat(DAMAGE_CENTERPRINT_SPACER, sprintf(_("^1Moron! You fragged %s, a team mate!"), s1)));
+				centerprint(strcat(DAMAGE_CENTERPRINT_SPACER, sprintf(_("^1Moron! You fragged ^7%s^1, a team mate!"), s1)));
 			}
 		} else if (type == KILL_FIRST_BLOOD) {
 			if(gentle) {
