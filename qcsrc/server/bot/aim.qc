@@ -7,7 +7,7 @@ entity ka_ball;
 float findtrajectorywithleading(vector org, vector m1, vector m2, entity targ, float shotspeed, float shotspeedupward, float maxtime, float shotdelay, entity ignore)
 {
 	local float c, savesolid, shottime;
-	local vector dir, end, v;
+	local vector dir, end, v, o;
 	if (shotspeed < 1)
 		return FALSE; // could cause division by zero if calculated
 	if (targ.solid < SOLID_BBOX) // SOLID_NOT and SOLID_TRIGGER
@@ -18,9 +18,10 @@ float findtrajectorywithleading(vector org, vector m1, vector m2, entity targ, f
 	setsize(tracetossent, m1, m2);
 	savesolid = targ.solid;
 	targ.solid = SOLID_NOT;
-	shottime = ((vlen(targ.origin - org) / shotspeed) + shotdelay);
-	v = targ.velocity * shottime + targ.origin;
-	tracebox(targ.origin, targ.mins, targ.maxs, v, FALSE, targ);
+	o = (targ.absmin + targ.absmax) * 0.5;
+	shottime = ((vlen(o - org) / shotspeed) + shotdelay);
+	v = targ.velocity * shottime + o;
+	tracebox(o, targ.mins, targ.maxs, v, FALSE, targ);
 	v = trace_endpos;
 	end = v + (targ.mins + targ.maxs) * 0.5;
 	if ((vlen(end - org) / shotspeed + 0.2) > maxtime)
@@ -319,7 +320,7 @@ vector bot_shotlead(vector targorigin, vector targvelocity, float shotspeed, flo
 
 float bot_aim(float shotspeed, float shotspeedupward, float maxshottime, float applygravity)
 {
-	local float f, r;
+	local float f, r, hf, distanceratio;
 	local vector v;
 	/*
 	eprint(self);
@@ -329,6 +330,10 @@ float bot_aim(float shotspeed, float shotspeedupward, float maxshottime, float a
 	dprint(", ", ftos(applygravity));
 	dprint(");\n");
 	*/
+
+	hf = self.dphitcontentsmask;
+	self.dphitcontentsmask = DPCONTENTS_SOLID | DPCONTENTS_BODY | DPCONTENTS_CORPSE;
+
 	shotspeed *= g_weaponspeedfactor;
 	shotspeedupward *= g_weaponspeedfactor;
 	if (!shotspeed)
@@ -345,15 +350,18 @@ float bot_aim(float shotspeed, float shotspeedupward, float maxshottime, float a
 	shotorg = self.origin + self.view_ofs;
 	shotdir = v_forward;
 	v = bot_shotlead(self.bot_aimtargorigin, self.bot_aimtargvelocity, shotspeed, self.bot_aimlatency);
-	local float distanceratio;
-	distanceratio =sqrt(bound(0,skill,10000))*0.3*(vlen(v-shotorg)-100)/autocvar_bot_ai_aimskill_firetolerance_distdegrees;
+	distanceratio = sqrt(bound(0,skill,10000))*0.3*(vlen(v-shotorg)-100)/autocvar_bot_ai_aimskill_firetolerance_distdegrees;
 	distanceratio = bound(0,distanceratio,1);
 	r =  (autocvar_bot_ai_aimskill_firetolerance_maxdegrees-autocvar_bot_ai_aimskill_firetolerance_mindegrees)
 		* (1-distanceratio) + autocvar_bot_ai_aimskill_firetolerance_mindegrees;
 	if (applygravity && self.bot_aimtarg)
 	{
 		if (!findtrajectorywithleading(shotorg, '0 0 0', '0 0 0', self.bot_aimtarg, shotspeed, shotspeedupward, maxshottime, 0, self))
+		{
+			self.dphitcontentsmask = hf;
 			return FALSE;
+		}
+
 		f = bot_aimdir(findtrajectory_velocity - shotspeedupward * '0 0 1', r);
 	}
 	else
@@ -369,10 +377,14 @@ float bot_aim(float shotspeed, float shotspeedupward, float maxshottime, float a
 		if (trace_fraction < 1)
 		if (trace_ent != self.enemy)
 		if (!bot_shouldattack(trace_ent))
+		{
+			self.dphitcontentsmask = hf;
 			return FALSE;
+		}
 	}
 
 	//if (r > maxshottime * shotspeed)
 	//	return FALSE;
+	self.dphitcontentsmask = hf;
 	return TRUE;
 };
