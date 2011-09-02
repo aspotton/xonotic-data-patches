@@ -1840,7 +1840,7 @@ void HUD_KillNotify(string s1, string s2, string s3, float type, float msg) // s
 	}
 }
 
-void HUD_Centerprint(string s1, string s2, float type, float msg)
+void HUD_KillCenterprint(string s1, string s2, float type, float msg)
 {
 	float gentle;
 	gentle = (autocvar_cl_gentle || autocvar_cl_gentle_messages);
@@ -4580,11 +4580,12 @@ void HUD_CenterPrint (void)
 						pos_y -= fontsize_y;
 					else
 						pos_y -= fontsize_y * CENTERPRINT_SPACING/2;
-					if (pos_y < panel_pos_y) // check if the next line can be shown
-					{
-						drawfontscale = '1 1 0';
-						return;
-					}
+					// NOTE: uncommented so as to not reject messages whenever they are "too large" -- This just continues drawing it anyway.
+					//if (pos_y < panel_pos_y) // check if the next line can be shown
+					//{
+					//	drawfontscale = '1 1 0';
+					//	return;
+					//}
 				}
 			}
 			current_msg_pos_y = pos_y; // save starting pos (first line) of the current message
@@ -4606,11 +4607,12 @@ void HUD_CenterPrint (void)
 				}
 				else
 					pos_y += fontsize_y * CENTERPRINT_SPACING/2;
-				if (!autocvar_hud_panel_centerprint_flip && pos_y > panel_pos_y + panel_size_y - fontsize_y) // check if the next line can be shown
-				{
-					drawfontscale = '1 1 0';
-					return;
-				}
+				// NOTE: uncommented so as to not reject messages whenever they are "too large" -- This just continues drawing it anyway.
+				//if (!autocvar_hud_panel_centerprint_flip && pos_y > panel_pos_y + panel_size_y - fontsize_y) // check if the next line can be shown
+				//{
+				//	drawfontscale = '1 1 0';
+				//	return;
+				//}
 			}
 		}
 		msg_size = pos_y - msg_size;

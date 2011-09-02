@@ -739,6 +739,13 @@ void PutObserverInServer (void)
 		else
 			self.frags = FRAGS_LMS_LOSER;
 	}
+	else if(g_ca)
+	{
+		if(self.caplayer)
+			self.frags = FRAGS_LMS_LOSER;
+		else
+			self.frags = FRAGS_SPECTATOR;
+	}
 	else
 		self.frags = FRAGS_SPECTATOR;
 }
@@ -1086,7 +1093,6 @@ void PutClientInServer (void)
 			if(e.spawnflags & WEP_FLAG_RELOADABLE) // prevent accessing undefined cvars
 				self.weapon_load[j] = cvar(strcat("g_balance_", e.netname, "_reload_ammo"));
 		}
-		self.weapon_forbidchange = FALSE;
 
 		oldself = self;
 		self = spot;
@@ -2313,7 +2319,8 @@ void SpectateCopy(entity spectatee) {
 	self.dmg_save = spectatee.dmg_save;
 	self.dmg_inflictor = spectatee.dmg_inflictor;
 	self.angles = spectatee.v_angle;
-	self.fixangle = TRUE;
+	if(!self.BUTTON_USE)
+		self.fixangle = TRUE;
 	setorigin(self, spectatee.origin);
 	setsize(self, spectatee.mins, spectatee.maxs);
 	SetZoomState(spectatee.zoomstate);
@@ -2359,12 +2366,41 @@ float SpectateUpdate() {
 	return 1;
 }
 
+
+// Returns next available player to spectate if g_ca_spectate_enemies == 0
+entity CA_SpectateNext(entity start) {
+	if (start.team == self.team) {
+		return start;
+	}
+	
+	other = start;
+	// continue from current player
+	while(other && other.team != self.team) {
+		other = find(other, classname, "player");
+	}
+	
+	if (!other) {
+		// restart from begining
+		other = find(other, classname, "player");
+		while(other && other.team != self.team) {
+			other = find(other, classname, "player");
+		}
+	}
+	
+	return other;
+}
+
 float SpectateNext() {
 	other = find(self.enemy, classname, "player");
-
-	if (!other)
-		other = find(other, classname, "player");
-
+	if (g_ca && !autocvar_g_ca_spectate_enemies && self.caplayer) {
+		// CA and ca players when spectating enemies is forbidden
+		other = CA_SpectateNext(other);
+	} else {
+		// other modes and ca spectators or spectating enemies is allowed
+		if (!other)
+			other = find(other, classname, "player");
+	}
+	
 	if (other)
 		self.enemy = other;
 
@@ -2501,6 +2537,42 @@ void checkSpectatorBlock() {
 	}
 }
 
+.float motd_actived_time; // used for both motd and campaign_message
+void PrintWelcomeMessage()
+{
+	if (self.motd_actived_time == 0) { // is there already a message showing?
+		if (autocvar_g_campaign) {
+			if ((self.classname == "player" && self.BUTTON_INFO) || (self.classname != "player")) {
+				self.motd_actived_time = time;
+				Send_CSQC_Centerprint_Generic(self, CPID_MOTD, campaign_message, -1, 0);
+			}
+		} else {
+			if ((time - self.jointime > autocvar_welcome_message_time) && self.BUTTON_INFO) {
+				self.motd_actived_time = time;
+				Send_CSQC_Centerprint_Generic(self, CPID_MOTD, getwelcomemessage(), -1, 0);
+			}
+		}
+	} else { // showing MOTD or campaign message
+		if (autocvar_g_campaign) {
+			if (self.BUTTON_INFO)
+				self.motd_actived_time = time;
+			else if ((time - self.motd_actived_time > 2) && self.classname == "player") { // hide it some seconds after BUTTON_INFO has been released
+				self.motd_actived_time = 0;
+				Send_CSQC_Centerprint_Generic_Expire(self, CPID_MOTD);
+			}
+		} else {
+			if ((time - self.jointime) > autocvar_welcome_message_time) {
+				if (self.BUTTON_INFO)
+					self.motd_actived_time = time;
+				else if (time - self.motd_actived_time > 2) { // hide it some seconds after BUTTON_INFO has been released
+					self.motd_actived_time = 0;
+					Send_CSQC_Centerprint_Generic_Expire(self, CPID_MOTD);
+				}
+			}
+		}
+	}
+}
+
 void ObserverThink()
 {
 	float prefered_movetype;
@@ -2529,6 +2601,8 @@ void ObserverThink()
 			}
 		}
 	}
+	
+	PrintWelcomeMessage();
 }
 
 void SpectatorThink()
@@ -2567,6 +2641,7 @@ void SpectatorThink()
 			PutObserverInServer();
 	}
 
+	PrintWelcomeMessage();
 	self.flags |= FL_CLIENT | FL_NOTARGET;
 }
 
@@ -2602,7 +2677,6 @@ Called every frame for each client before the physics are run
 void() ctf_setstatus;
 void() nexball_setstatus;
 .float items_added;
-.float motd_actived_time; // used for both motd and campaign_message
 void PlayerPreThink (void)
 {
 	WarpZone_PlayerPhysics_FixVAngle();
@@ -2681,40 +2755,8 @@ void PlayerPreThink (void)
 		PlayerUseKey();
 	self.usekeypressed = self.BUTTON_USE;
 
-	if (self.motd_actived_time == 0) {
-		if (autocvar_g_campaign) {
-			if (self.classname == "player" && self.BUTTON_INFO) {
-				self.motd_actived_time = time;
-				Send_CSQC_Centerprint_Generic(self, CPID_MOTD, campaign_message, -1, 0);
-			}
-		} else {
-			if ((self.classname == "player" || time - self.jointime > autocvar_welcome_message_time) && self.BUTTON_INFO) {
-				self.motd_actived_time = time;
-				Send_CSQC_Centerprint_Generic(self, CPID_MOTD, getwelcomemessage(), -1, 0);
-			}
-		}
-	} else { // showing MOTD or campaign message
-		if (autocvar_g_campaign) {
-			if (self.classname == "player") {
-				if (self.BUTTON_INFO)
-					self.motd_actived_time = time;
-				else if (time - self.motd_actived_time > 2) { // hide it some seconds after BUTTON_INFO has been released
-					self.motd_actived_time = 0;
-					Send_CSQC_Centerprint_Generic_Expire(self, CPID_MOTD);
-				}
-			}
-		} else {
-			if (self.classname == "player" || (time - self.jointime) > autocvar_welcome_message_time) {
-				if (self.BUTTON_INFO)
-					self.motd_actived_time = time;
-				else if (time - self.motd_actived_time > 2) { // hide it some seconds after BUTTON_INFO has been released
-					self.motd_actived_time = 0;
-					Send_CSQC_Centerprint_Generic_Expire(self, CPID_MOTD);
-				}
-			}
-		}
-	}
-
+	PrintWelcomeMessage();
+	
 	if(self.classname == "player") {
 //		if(self.netname == "Wazat")
 //			bprint(self.classname, "\n");

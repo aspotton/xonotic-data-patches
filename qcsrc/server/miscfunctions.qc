@@ -1258,9 +1258,6 @@ void readlevelcvars(void)
     if(!g_weapon_stay)
         g_weapon_stay = cvar("g_weapon_stay");
 
-	if (!g_weapon_stay && (cvar("deathmatch") == 2))
-		g_weapon_stay = 1;
-
 	g_ghost_items = cvar("g_ghost_items");
 
 	if(g_ghost_items >= 1)
@@ -1675,8 +1672,7 @@ void Send_CSQC_Centerprint_Generic(entity e, float id, string s, float duration,
 		msg_entity = e;
 		WRITESPECTATABLE_MSG_ONE({
 			WriteByte(MSG_ONE, SVC_TEMPENTITY);
-			WriteByte(MSG_ONE, TE_CSQC_NOTIFY);
-			WriteByte(MSG_ONE, CSQC_CENTERPRINT_GENERIC);
+			WriteByte(MSG_ONE, TE_CSQC_CENTERPRINT_GENERIC);
 			WriteByte(MSG_ONE, id);
 			WriteString(MSG_ONE, s);
 			if (id != 0 && s != "")
@@ -1756,6 +1752,8 @@ void remove_except_protected(entity e)
 
 void remove_unsafely(entity e)
 {
+    if(e.classname == "spike")
+        error("Removing spikes is forbidden (crylink bug), please report");
     remove_builtin(e);
 }
 
@@ -2019,6 +2017,7 @@ float SUB_NoImpactCheck()
 #define SUB_OwnerCheck() (other && (other == self.owner))
 
 void RemoveGrapplingHook(entity pl);
+void W_Crylink_Dequeue(entity e);
 float WarpZone_Projectile_Touch_ImpactFilter_Callback()
 {
 	if(SUB_OwnerCheck())
@@ -2027,6 +2026,11 @@ float WarpZone_Projectile_Touch_ImpactFilter_Callback()
 	{
 		if(self.classname == "grapplinghook")
 			RemoveGrapplingHook(self.realowner);
+		else if(self.classname == "spike")
+		{
+			W_Crylink_Dequeue(self);
+			remove(self);
+		}
 		else
 			remove(self);
 		return TRUE;
@@ -2472,6 +2476,7 @@ float MoveToRandomMapLocation(entity e, float goodcontents, float badcontents, f
 {
     float m, i;
     vector start, org, delta, end, enddown, mstart;
+    entity sp;
 
     m = e.dphitcontentsmask;
     e.dphitcontentsmask = goodcontents | badcontents;
@@ -2523,6 +2528,19 @@ float MoveToRandomMapLocation(entity e, float goodcontents, float badcontents, f
         traceline(mstart, mstart + '0 0 1' * delta_z, MOVE_NORMAL, e);
         if (trace_fraction >= 1)
             continue;
+
+	// rule 4: we must "see" some spawnpoint
+	for(sp = world; (sp = find(sp, classname, "info_player_deathmatch")); )
+		if(checkpvs(mstart, sp))
+			break;
+	if(!sp)
+	{
+		for(sp = world; (sp = findflags(sp, flags, FL_ITEM)); )
+			if(checkpvs(mstart, sp))
+				break;
+		if(!sp)
+			continue;
+	}
 
         // find a random vector to "look at"
         end_x = org_x + random() * delta_x;
