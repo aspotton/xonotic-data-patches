@@ -86,6 +86,92 @@ void W_MinstaNex_Attack (void)
 		W_DecreaseAmmo(ammo_cells, autocvar_g_balance_minstanex_ammo, autocvar_g_balance_minstanex_reload_ammo);
 }
 
+void W_MinstaNex_Attack2_Think (void)
+{
+	self.think = SUB_Remove;
+	self.nextthink = time;
+
+	entity oldself = self;
+	self = oldself.owner;
+
+	W_SetupShot (self, TRUE, 0, "weapons/minstanexfire.wav", CH_WEAPON_A, 10000);
+
+	float i;
+	for(i=0; i<75; i++)
+	{
+		float distance;
+		distance = 800 + random() * 2000;
+		vector destvector = oldself.origin + (randomvec() * 30) * distance;
+		FireRailgunBullet (oldself.origin, destvector, 10000, 800, 0, 0, 0, 0, WEP_MINSTANEX);
+		//pointparticles(particleeffectnum("nex_muzzleflash"), oldself.origin, destvector, 10);
+
+		// teamcolor / hit beam effect
+		vector v;
+		v = WarpZone_UnTransformOrigin(WarpZone_trace_transform, trace_endpos);
+		if(teamplay)
+		{
+		    switch(self.team)
+		    {
+	            case COLOR_TEAM1:   // Red
+	                if(damage_goodhits)
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3RED_HIT"), oldself.origin, v);
+	                else
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3RED"), oldself.origin, v);
+	                break;
+	            case COLOR_TEAM2:   // Blue
+	                if(damage_goodhits)
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3BLUE_HIT"), oldself.origin, v);
+	                else
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3BLUE"), oldself.origin, v);
+	                break;
+	            case COLOR_TEAM3:   // Yellow
+	                if(damage_goodhits)
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3YELLOW_HIT"), oldself.origin, v);
+	                else
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3YELLOW"), oldself.origin, v);
+	                break;
+	            case COLOR_TEAM4:   // Pink
+	                if(damage_goodhits)
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3PINK_HIT"), oldself.origin, v);
+	                else
+	                    WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3PINK"), oldself.origin, v);
+	                break;
+		    }
+		}
+		else
+	        WarpZone_TrailParticles(world, particleeffectnum("TE_TEI_G3"), oldself.origin, v);
+
+		// flash and burn the wall
+		if (trace_ent.solid == SOLID_BSP && !(trace_dphitq3surfaceflags & Q3SURFACEFLAG_NOIMPACT))
+			Damage_DamageInfo(trace_endpos, 10000, 0, 0, 800 * oldself.origin, WEP_MINSTANEX, self);
+
+		if (g_minstagib)
+			W_DecreaseAmmo(ammo_cells, 1, autocvar_g_balance_minstanex_reload_ammo);
+		else
+			W_DecreaseAmmo(ammo_cells, autocvar_g_balance_minstanex_ammo, autocvar_g_balance_minstanex_reload_ammo);
+	}
+
+	self = oldself;
+}
+
+void W_MinstaNex_Attack2 (void)
+{
+	float flying;
+	flying = IsFlying(self); // do this BEFORE to make the trace values from FireRailgunBullet last
+
+	// Make the secondary fire a charge that takes a second before it goes off
+	W_SetupShot (self, TRUE, 0, "weapons/minstanexfire.wav", CH_WEAPON_A, 10000);
+	//pointparticles(particleeffectnum("nex_muzzleflash"), w_shotorg, w_shotorg, 1);
+	modeleffect_spawn("models/sphere/sphere.md3", 0, 0, w_shotorg + w_shotdir * 600, '0 0 0', '0 0 0', '0 0 0', 0, autocvar_g_balance_fireball_primary_bfgradius, 0.2, 0.05, 1.25);
+
+	entity secondaryfire = spawn();
+	secondaryfire.think = W_MinstaNex_Attack2_Think;
+	secondaryfire.nextthink = time + 0.5;
+	secondaryfire.event_damage = SUB_Null;
+	secondaryfire.takedamage = DAMAGE_NO;
+	secondaryfire.owner = self;
+	setorigin(secondaryfire, w_shotorg + w_shotdir * 600);
+}
 
 .float minstagib_nextthink;
 .float minstagib_needammo;
@@ -207,21 +293,27 @@ float w_minstanex(float req)
 		}
 		else if (self.BUTTON_ATCK2)
 		{
-			if (self.jump_interval <= time)
+			if (weapon_prepareattack(0, autocvar_g_balance_minstanex_refire * 2))
 			{
-				self.jump_interval = time + autocvar_g_balance_laser_primary_refire * W_WeaponRateFactor();
+				W_MinstaNex_Attack2();
+				weapon_thinkf(WFRAME_FIRE1, autocvar_g_balance_minstanex_animtime, w_ready);
+			} 
+
+			//if (self.jump_interval <= time)
+			//{
+			//	self.jump_interval = time + autocvar_g_balance_laser_primary_refire * W_WeaponRateFactor();
 
 				// decrease ammo for the laser?
-				if(autocvar_g_balance_minstanex_laser_ammo)
-					W_DecreaseAmmo(ammo_cells, autocvar_g_balance_minstanex_laser_ammo, autocvar_g_balance_minstanex_reload_ammo);
+			//	if(autocvar_g_balance_minstanex_laser_ammo)
+			//		W_DecreaseAmmo(ammo_cells, autocvar_g_balance_minstanex_laser_ammo, autocvar_g_balance_minstanex_reload_ammo);
 
 				// ugly minstagib hack to reuse the fire mode of the laser
-				float w;
-				w = self.weapon;
-				self.weapon = WEP_LASER;
-				W_Laser_Attack(2);
-				self.weapon = w;
-			}
+			//	float w;
+			//	w = self.weapon;
+			//	self.weapon = WEP_LASER;
+			//	W_Laser_Attack(2);
+			//	self.weapon = w;
+			//}
 		}
 	}
 	else if (req == WR_PRECACHE)
