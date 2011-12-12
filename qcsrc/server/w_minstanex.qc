@@ -100,7 +100,7 @@ void W_MinstaNex_Attack2_Think (void)
 	for(i=0; i<75; i++)
 	{
 		float distance;
-		distance = 800 + random() * 2000;
+		distance = 800 + random() * 1600;
 		vector destvector = oldself.origin + (randomvec() * 30) * distance;
 		FireRailgunBullet (oldself.origin, destvector, 10000, 800, 0, 0, 0, 0, WEP_MINSTANEX);
 		//pointparticles(particleeffectnum("nex_muzzleflash"), oldself.origin, destvector, 10);
@@ -162,7 +162,7 @@ void W_MinstaNex_Attack2 (void)
 	// Make the secondary fire a charge that takes a second before it goes off
 	W_SetupShot (self, TRUE, 0, "weapons/minstanexfire.wav", CH_WEAPON_A, 10000);
 	//pointparticles(particleeffectnum("nex_muzzleflash"), w_shotorg, w_shotorg, 1);
-	modeleffect_spawn("models/sphere/sphere.md3", 0, 0, w_shotorg + w_shotdir * 600, '0 0 0', '0 0 0', '0 0 0', 0, autocvar_g_balance_fireball_primary_bfgradius, 0.2, 0.05, 1.25);
+	modeleffect_spawn("models/sphere/sphere.md3", 0, 0, w_shotorg + w_shotdir * 600, '0 0 0', '0 0 0', '0 0 0', 0, 1200/*radius*/, 0.2, 0.05, 1.25);
 
 	entity secondaryfire = spawn();
 	secondaryfire.think = W_MinstaNex_Attack2_Think;

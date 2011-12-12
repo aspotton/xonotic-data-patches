@@ -435,8 +435,8 @@ void W_Electro_Attack3 (void)
 void W_Electro_Attack4 (void)
 {
 	// only play fire sound if 0.5 sec has passed since player let go the fire button
-	if(time - self.prevlgfire > 0.5)
-		sound (self, CHAN_WEAPON, "weapons/lgbeam_fire.wav", VOL_BASE, ATTN_NORM);
+//	if(time - self.prevlgfire > 0.5)
+//		sound (self, CHAN_WEAPON, "weapons/lgbeam_fire.wav", VOL_BASE, ATTN_NORM);
 
 	entity beam, oldself;
 
