@@ -3,7 +3,6 @@ string teamstats_last;
 string playerstats_last;
 string events_last;
 .float playerstats_addedglobalinfo;
-float playerstats_requested;
 .string playerstats_id;
 
 void PlayerStats_Init()
@@ -17,7 +16,9 @@ void PlayerStats_Init()
 	playerstats_db = db_create();
 	if(playerstats_db >= 0)
 		playerstats_waitforme = FALSE; // must wait for it at match end
-	
+
+	serverflags |= SERVERFLAG_PLAYERSTATS;	
+
 	PlayerStats_AddEvent(PLAYERSTATS_ALIVETIME);
 	PlayerStats_AddEvent(PLAYERSTATS_WINS);
 	PlayerStats_AddEvent(PLAYERSTATS_MATCHES);
@@ -154,12 +155,6 @@ void PlayerStats_TeamScore(float t, string event_id, float value) // TODO: doesn
 	db_put(playerstats_db, key, ftos(val));
 }
 
-void PlayerStats_Sent_URI_Get_Callback(float id, float status, string data)
-{
-	if(playerstats_requested)
-		playerstats_waitforme = TRUE;
-}
-
 /*
 	format spec:
 
@@ -174,12 +169,13 @@ void PlayerStats_Sent_URI_Get_Callback(float id, float status, string data)
 	T: time at which the game ended
 	G: game type
 	M: map name
+	I: match ID (see "matchid" in g_world.qc
 	S: "hostname" of the server
 	C: number of "unpure" cvar changes
-    W: winning team ID
+	U: UDP port number of the server
 	P: player ID of an existing player; this also sets the owner for all following "n", "e" and "t" lines (lower case!)
 	n: nickname of the player (optional)
-    t: team ID
+	t: team ID
 	e: followed by an event name, a space, and the event count/score
 		event names can be:
 			alivetime: total playing time of the player
@@ -190,12 +186,12 @@ void PlayerStats_Sent_URI_Get_Callback(float id, float status, string data)
 			total-<scoreboardname>: total score of that scoreboard item
 			scoreboard-<scoreboardname>: end-of-game score of that scoreboard item (can differ in non-team games)
 			achievement-<achievementname>: achievement counters
-            rank <number>: rank of player
-            acc-<weapon netname>-hit: total damage dealt
-            acc-<weapon netname>-fired: total damage that all fired projectiles *could* have dealt
-            acc-<weapon netname>-cnt-hit: amount of shots that actually hit
-            acc-<weapon netname>-cnt-fired: amount of fired shots
-            acc-<weapon netname>-frags: amount of frags dealt by weapon
+			rank <number>: rank of player
+			acc-<weapon netname>-hit: total damage dealt
+			acc-<weapon netname>-fired: total damage that all fired projectiles *could* have dealt
+			acc-<weapon netname>-cnt-hit: amount of shots that actually hit
+			acc-<weapon netname>-cnt-fired: amount of fired shots
+			acc-<weapon netname>-frags: amount of frags dealt by weapon
 */
 
 void PlayerStats_ready(entity fh, entity pass, float status)
@@ -218,6 +214,7 @@ void PlayerStats_ready(entity fh, entity pass, float status)
 			url_fputs(fh, sprintf("I %s\n", matchid));
 			url_fputs(fh, sprintf("S %s\n", cvar_string("hostname")));
 			url_fputs(fh, sprintf("C %d\n", cvar_purechanges_count));
+			url_fputs(fh, sprintf("U %d\n", cvar("port")));
 			for(p = playerstats_last; (pn = db_get(playerstats_db, sprintf("%s:*", p))) != ""; p = pn)
 			{
 				url_fputs(fh, sprintf("P %s\n", p));
@@ -241,9 +238,7 @@ void PlayerStats_ready(entity fh, entity pass, float status)
 				}
 			}
 			url_fputs(fh, "\n");
-			db_close(playerstats_db);
-			playerstats_db = -1;
-			url_fclose(fh, PlayerStats_ready, world);
+			url_fclose(fh);
 			break;
 		case URL_READY_CANREAD:
 			// url_fclose is processing, we got a response for writing the data
@@ -252,12 +247,14 @@ void PlayerStats_ready(entity fh, entity pass, float status)
 			while((s = url_fgets(fh)))
 				print("  ", s, "\n");
 			print("End of response.\n");
-			url_fclose(fh, PlayerStats_ready, world);
+			url_fclose(fh);
 			break;
 		case URL_READY_CLOSED:
 			// url_fclose has finished
 			print("Player stats written\n");
 			playerstats_waitforme = TRUE;
+			db_close(playerstats_db);
+			playerstats_db = -1;
 			break;
 		case URL_READY_ERROR:
 		default:
@@ -283,8 +280,8 @@ void PlayerStats_Shutdown()
 	uri = autocvar_g_playerstats_uri;
 	if(uri != "")
 	{
-		url_fopen(uri, FILE_APPEND, PlayerStats_ready, world);
 		playerstats_waitforme = FALSE;
+		url_multi_fopen(uri, FILE_APPEND, PlayerStats_ready, world);
 	}
 	else
 	{
@@ -294,6 +291,26 @@ void PlayerStats_Shutdown()
 	}
 }
 //#NO AUTOCVARS END
+
+void PlayerStats_Accuracy(entity p)
+{
+    entity a, w;
+    a = p.accuracy;
+    float i;
+
+    for(i = WEP_FIRST; i <= WEP_LAST; ++i)
+    {
+        w = get_weaponinfo(i);
+
+        PlayerStats_Event(p, strcat("acc-", w.netname, "-hit"), a.(accuracy_hit[i-1]));
+        PlayerStats_Event(p, strcat("acc-", w.netname, "-fired"), a.(accuracy_fired[i-1]));
+
+        PlayerStats_Event(p, strcat("acc-", w.netname, "-cnt-hit"), a.(accuracy_cnt_hit[i-1]));
+        PlayerStats_Event(p, strcat("acc-", w.netname, "-cnt-fired"), a.(accuracy_cnt_fired[i-1]));
+
+        PlayerStats_Event(p, strcat("acc-", w.netname, "-frags"), a.(accuracy_frags[i-1]));
+    }
+}
 
 void PlayerStats_AddGlobalInfo(entity p)
 {
@@ -321,38 +338,30 @@ void PlayerStats_AddGlobalInfo(entity p)
 	if(stof(db_get(playerstats_db, sprintf("%d:%s", p.playerstats_id, PLAYERSTATS_ALIVETIME))) > 0)
 		PlayerStats_Event(p, PLAYERSTATS_JOINS, 1);
 
+	PlayerStats_Accuracy(p);
+
 	strunzone(p.playerstats_id);
 	p.playerstats_id = string_null;
-}
-
-void PlayerStats_Accuracy(entity p)
-{
-    entity a, w;
-    a = p.accuracy;
-    float i;
-
-    for(i = WEP_FIRST; i <= WEP_LAST; ++i)
-    {
-        w = get_weaponinfo(i);
-
-        PlayerStats_Event(p, strcat("acc-", w.netname, "-hit"), a.accuracy_hit[i-1]);
-        PlayerStats_Event(p, strcat("acc-", w.netname, "-fired"), a.accuracy_fired[i-1]);
-
-        PlayerStats_Event(p, strcat("acc-", w.netname, "-cnt-hit"), a.accuracy_cnt_hit[i-1]);
-        PlayerStats_Event(p, strcat("acc-", w.netname, "-cnt-fired"), a.accuracy_cnt_fired[i-1]);
-
-        PlayerStats_Event(p, strcat("acc-", w.netname, "-frags"), a.accuracy_frags[i-1]);
-    }
 }
 
 void PlayerStats_EndMatch(float finished)
 {
 	entity p, winner;
-    winner = PlayerScore_Sort(score_dummyfield);
-	FOR_EACH_PLAYER(p) // spectators intentionally not included
+	winner = PlayerScore_Sort(score_dummyfield);
+	FOR_EACH_CLIENT(p) // spectators intentionally not included
 	{
-		PlayerScore_PlayerStats(p);
 		PlayerStats_Accuracy(p);
+		if(g_arena || g_lms || g_ca)
+		{
+			if(p.alivetime <= 0)
+				continue;
+		}
+		else
+		{
+			if(p.classname != "player")
+				continue;
+		}
+		PlayerScore_PlayerStats(p);
 		PlayerStats_Event(p, PLAYERSTATS_SCOREBOARD_VALID, 1);
 		if(finished)
 		{

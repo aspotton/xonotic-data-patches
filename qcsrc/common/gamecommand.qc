@@ -191,6 +191,9 @@ float GameCommand_Generic(string command)
 		print("    s localtime -----------------------> s   : formats the current local time\n");
 		print("    s gmtime --------------------------> s   : formats the current UTC time\n");
 		print("    time ------------------------------> f   : seconds since VM start\n");
+		print("    s /MD4 digest ---------------------> s   : MD4 digest\n");
+		print("    s /SHA256 digest ------------------> s   : SHA256 digest\n");
+		print("    s /formatstring sprintf1s ---------> s   : sprintf with 1 string (pad, cut)\n");
 		print("    Set operations operate on 'such''strings'.\n");
 		print("    Unknown tokens insert their cvar value.\n");
 		print("  maplist add map\n");
@@ -422,11 +425,7 @@ float GameCommand_Generic(string command)
 						rpn_error = TRUE;
 					}
 				} else if(rpncmd == "load") {
-#ifdef SVQC
-					rpn_set(cvar_string_builtin(rpn_get())); // cvar name comes from user
-#else
 					rpn_set(cvar_string(rpn_get()));
-#endif
 				} else if(rpncmd == "exch") {
 					s = rpn_pop();
 					s2 = rpn_get();
@@ -790,6 +789,12 @@ float GameCommand_Generic(string command)
 					rpn_set(strftime(FALSE, rpn_get()));
 				} else if(rpncmd == "time") {
 					rpn_pushf(time);
+				} else if(rpncmd == "digest") {
+					s = rpn_pop();
+					rpn_set(digest_hex(s, rpn_get()));
+				} else if(rpncmd == "sprintf1s") {
+					s = rpn_pop();
+					rpn_set(sprintf(s, rpn_get()));
 				} else {
 					rpn_push(cvar_string(rpncmd));
 				}
