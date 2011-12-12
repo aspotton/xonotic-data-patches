@@ -127,9 +127,9 @@ void WaypointSprite_FadeOutIn(entity e, float t)
 
 void WaypointSprite_Init()
 {
-	waypointsprite_limitedrange = autocvar_g_waypointsprite_limitedrange;
-	waypointsprite_deployed_lifetime = autocvar_g_waypointsprite_deployed_lifetime;
-	waypointsprite_deadlifetime = autocvar_g_waypointsprite_deadlifetime;
+	waypointsprite_limitedrange = autocvar_sv_waypointsprite_limitedrange;
+	waypointsprite_deployed_lifetime = autocvar_sv_waypointsprite_deployed_lifetime;
+	waypointsprite_deadlifetime = autocvar_sv_waypointsprite_deadlifetime;
 }
 void WaypointSprite_InitClient(entity e)
 {
@@ -241,7 +241,7 @@ float WaypointSprite_Customize()
 	// as a GENERAL rule:
 	// if you have the invisibility powerup, sprites ALWAYS are restricted to your team
 	// but only apply this to real players, not to spectators
-	if(g_minstagib && (self.owner.items & IT_STRENGTH) && (e == other))
+	if(g_minstagib && (self.owner.flags & FL_CLIENT) && (self.owner.items & IT_STRENGTH) && (e == other))
 	{
 		if(!WaypointSprite_isteammate(self.owner, e))
 			return FALSE;

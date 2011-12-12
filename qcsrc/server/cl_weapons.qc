@@ -17,7 +17,7 @@ void W_SwitchWeapon(float imp)
 	{
 		W_TriggerReload();
 	}
-};
+}
 
 .float weaponcomplainindex;
 float W_GetCycleWeapon(entity pl, string weaponorder, float dir, float imp, float complain, float skipmissing)
@@ -137,17 +137,26 @@ void W_PreviousWeapon(float list)
 		W_CycleWeapon(self.cvar_cl_weaponpriority, +1);
 }
 
+// previously used if exists and has ammo, (second) best otherwise
+void W_LastWeapon()
+{
+	if(client_hasweapon(self, self.cnt, TRUE, FALSE))
+		W_SwitchWeapon(self.cnt);
+	else
+		W_SwitchToOtherWeapon(self);
+}
+
 float w_getbestweapon(entity e)
 {
 	return W_GetCycleWeapon(e, e.cvar_cl_weaponpriority, 0, -1, FALSE, TRUE);
-};
+}
 
 // generic weapons table
 // TODO should they be macros instead?
 float weapon_action(float wpn, float wrequest)
 {
 	return (get_weaponinfo(wpn)).weapon_func(wrequest);
-};
+}
 
 string W_Name(float weaponid)
 {
@@ -224,10 +233,10 @@ string W_ThrowNewWeapon(entity own, float wpn, float doreduce, vector org, vecto
 					s = strcat(s, " and ", ftos(thisammo), " ", Item_CounterFieldName(j));
 
 					// if our weapon is loaded, give its load back to the player
-					if(self.weapon_load[self.weapon] > 0)
+					if(self.(weapon_load[self.weapon]) > 0)
 					{
-						own.ammofield += self.weapon_load[self.weapon];
-						self.weapon_load[self.weapon] = -1; // schedule the weapon for reloading
+						own.ammofield += self.(weapon_load[self.weapon]);
+						self.(weapon_load[self.weapon]) = -1; // schedule the weapon for reloading
 					}
 				}
 			}
@@ -278,7 +287,7 @@ float W_IsWeaponThrowable(float w)
 // toss current weapon
 void W_ThrowWeapon(vector velo, vector delta, float doreduce)
 {
-	local float w, wb;
+	float w, wb;
 	string a;
 
 	w = self.weapon;
@@ -308,7 +317,7 @@ void W_ThrowWeapon(vector velo, vector delta, float doreduce)
 		sprint(self, strcat("You dropped the ^2", W_Name(w), "\n"));
 	else
 		sprint(self, strcat("You dropped the ^2", W_Name(w), " with ", a, "\n"));
-};
+}
 
 // Bringed back weapon frame
 void W_WeaponFrame()
@@ -359,7 +368,7 @@ void W_WeaponFrame()
 			e = get_weaponinfo(self.switchweapon);
 			if(e.spawnflags & WEP_FLAG_RELOADABLE && cvar(strcat("g_balance_", e.netname, "_reload_ammo"))) // prevent accessing undefined cvars
 			{
-				self.clip_load = self.weapon_load[self.switchweapon];
+				self.clip_load = self.(weapon_load[self.switchweapon]);
 				self.clip_size = cvar(strcat("g_balance_", e.netname, "_reload_ammo"));
 			}
 			else
@@ -405,7 +414,7 @@ void W_WeaponFrame()
 	// call the think code which may fire the weapon
 	// and do so multiple times to resolve framerate dependency issues if the
 	// server framerate is very low and the weapon fire rate very high
-	local float c;
+	float c;
 	c = 0;
 	while (c < W_TICSPERFRAME)
 	{
@@ -414,7 +423,8 @@ void W_WeaponFrame()
 		{
 			if (!autocvar_g_znix && !autocvar_g_znix_with_laser)
 			{
-				W_SwitchWeapon_Force(self, w_getbestweapon(self));
+				if(self.weapon == self.switchweapon)
+					W_SwitchWeapon_Force(self, w_getbestweapon(self));
 			}
 			else
 			{
@@ -466,4 +476,4 @@ void W_WeaponFrame()
 	else
 		self.currentammo = 1;
 #endif
-};
+}
